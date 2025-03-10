@@ -533,6 +533,9 @@ components:
           limit:
             type: integer
             description: Number of chats per page.
+          total:
+            type: integer
+            description: Total number of chats available.
           chats:
             type: array
             items:
@@ -560,11 +563,13 @@ components:
           - userId
           - page
           - limit
+          - total
           - chats
         example:
           userId: "user1"
           page: 1
           limit: 20
+          total: 35
           chats:
             - chatId: "chat123"
               groupName: "Team Chat"
