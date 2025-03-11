@@ -1,3 +1,4 @@
+from datetime import datetime
 from bson.objectid import ObjectId
 
 def test_create_chat_group(chat_groups):
@@ -5,13 +6,36 @@ def test_create_chat_group(chat_groups):
     group_name = "Test Group"
     users = ["user1", "user2"]
     
-    chat_id = chat_groups.create_chat_group(group_name, users)
-    assert chat_id is not None
+    chat_group = chat_groups.create_chat_group(group_name, users)
+    
+    assert chat_group is not None
+    print(chat_group)
+    assert isinstance(chat_group["_id"], ObjectId)
+    assert chat_group["groupName"] == group_name
+    assert set(chat_group["users"]) == set(users)
+    assert isinstance(chat_group["createdAt"], datetime)
 
-    group = chat_groups.get_chat_group(chat_id)
-    assert group is not None
-    assert group["groupName"] == group_name
-    assert set(group["users"]) == set(users)
+def test_get_chat_group(chat_groups):
+    """Test retrieving a chat group."""
+    group_name = "Test Group"
+    users = ["user1", "user2"]
+    
+    create_chat_group = chat_groups.create_chat_group(group_name, users)
+    print(create_chat_group)
+    assert create_chat_group is not None
+    assert isinstance(create_chat_group["_id"], ObjectId)
+    assert create_chat_group["groupName"] == group_name
+    assert set(create_chat_group["users"]) == set(users)
+    assert isinstance(create_chat_group["createdAt"], datetime)
+
+    get_chat_group = chat_groups.get_chat_group(create_chat_group["_id"])
+    print(get_chat_group)
+    assert get_chat_group is not None
+    assert isinstance(create_chat_group["_id"], ObjectId)
+    assert create_chat_group["_id"] == get_chat_group["_id"]
+    assert create_chat_group["groupName"] == get_chat_group["groupName"]
+    assert set(create_chat_group["users"]) == set(get_chat_group["users"])
+    assert create_chat_group["createdAt"] == get_chat_group["createdAt"]
 
 
 def test_update_chat_group(chat_groups):

@@ -7,6 +7,8 @@ from pymongo.errors import ConnectionFailure
 class ChatServiceDatabase:
     def __init__(self):
         # Get database configuration from environment variables
+        
+        load_dotenv()
         mongo_uri = os.getenv("MONGO_URI")
         db_name = os.getenv("MONGO_DB")
 
@@ -59,6 +61,6 @@ class ChatServiceDatabase:
     
     
 # Example on how to create and retrieve the database
-load_dotenv()
-db_instance = ChatServiceDatabase()
-print("Connected to DB:", db_instance.get_database().name)
+#load_dotenv()
+#db_instance = ChatServiceDatabase()
+#print("Connected to DB:", db_instance.get_database().name)

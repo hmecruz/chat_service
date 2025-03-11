@@ -4,7 +4,7 @@ from .database_init import ChatServiceDatabase
 
 class ChatGroups:
     def __init__(self, db: ChatServiceDatabase):
-        self.chat_groups = db.get_db()["chat_groups"]
+        self.chat_groups = db.get_database()["chat_groups"]
     
     def create_chat_group(self, group_name: str, users: list) -> dict:
         """
@@ -14,21 +14,18 @@ class ChatGroups:
         chat_group = {
             "groupName": group_name,
             "users": users,
-            "createdAt": datetime.utcnow()
+            "createdAt":  datetime.utcnow().replace(microsecond=0)  # Truncate microseconds
         }
         result = self.chat_groups.insert_one(chat_group)
-        chat_group["chat_id"] = str(result.inserted_id)
+        chat_group["_id"] = result.inserted_id
         return chat_group
 
-    def get_chat_group(self, chat_id: str) -> dict:
+    def get_chat_group(self, chat_id: ObjectId) -> dict | None:
         """
         Retrieve a chat group by its chat_id.
         Returns the chat group document if found, otherwise None.
         """
-        group = self.chat_groups.find_one({"_id": ObjectId(chat_id)})
-        if group:
-            group["chat_id"] = str(group["_id"])
-        return group
+        return self.chat_groups.find_one({"_id": chat_id})
 
     def update_chat_group(self, chat_id: str, group_name: str = None, users: list = None) -> int:
         """

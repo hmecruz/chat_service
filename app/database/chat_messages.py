@@ -5,7 +5,7 @@ from .database_init import ChatServiceDatabase
 class ChatMessages:
     def __init__(self, db: ChatServiceDatabase):
         # Access the "messages" collection from the database
-        self.messages = db.get_db()["messages"]
+        self.messages = db.get_database()["messages"]
 
     def store_message(self, chat_id: str, sender_id: str, content: str) -> str:
         """
