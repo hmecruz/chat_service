@@ -74,8 +74,14 @@ class ChatGroups:
 
     def delete_chat_group(self, chat_id: ObjectId) -> int:
         """
-        Delete a chat group by its chat_id.
-        Returns the number of documents deleted.
+        Permanently delete a chat group from the database.
+
+        Args:
+            chat_id (ObjectId): The unique identifier of the chat group to delete.
+
+        Returns:
+            int: The number of documents deleted (0 if not found, 1 if deleted).
+
         """
         result = self.chat_groups.delete_one({"_id": ObjectId(chat_id)})
         return result.deleted_count

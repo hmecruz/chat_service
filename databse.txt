@@ -11,4 +11,3 @@ sender_id: Identifier of the message sender.
 sentAt: Timestamp of when the message was sent.
 content: The message content.
 editedAt: Timestamp of when the message was edited (optional).
-deletedAt: Timestamp of when the message was deleted (optional).

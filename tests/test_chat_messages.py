@@ -181,4 +181,4 @@ def test_delete_message(chat_messages):
     assert result == 1
 
     deleted_message = chat_messages.messages.find_one({"_id": message_id})
-    assert "deletedAt" in deleted_message
+    assert deleted_message is None

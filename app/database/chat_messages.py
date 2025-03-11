@@ -105,18 +105,15 @@ class ChatMessages:
         return {"_id": message_id, "content": new_content}
     
 
-    def delete_message(self, message_id: str) -> int:
+    def delete_message(self, message_id: ObjectId) -> int:
         """
-        Mark a message as deleted by setting a deletedAt timestamp.
+        Permanent delete a message.
         
         Args:
-            message_id (str): The ID of the message to delete.
+            message_id (ObjectId): The ID of the message to delete.
             
         Returns:
             int: The number of documents modified.
         """
-        result = self.messages.update_one(
-            {"_id": ObjectId(message_id)},
-            {"$set": {"deletedAt": datetime.utcnow().replace(microsecond=0)}}
-        )
-        return result.modified_count
+        result = self.messages.delete_one({"_id": ObjectId(message_id)})
+        return result.deleted_count
