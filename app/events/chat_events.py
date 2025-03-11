@@ -6,10 +6,6 @@ import uuid
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-def generate_id(prefix):
-    """Generate a simple unique id using a prefix."""
-    return f"{prefix}_{uuid.uuid4().hex[:8]}"
-
 # -------------------------------
 # Channel: chat/create
 # Publish: createChatGroup (CreateChatRequest)

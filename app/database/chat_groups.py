@@ -1,6 +1,6 @@
 from bson.objectid import ObjectId
 from datetime import datetime
-from .database_initializer import ChatServiceDatabase
+from .database_init import ChatServiceDatabase
 
 class ChatGroups:
     def __init__(self, db: ChatServiceDatabase):

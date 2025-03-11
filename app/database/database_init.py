@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
@@ -30,9 +31,9 @@ class ChatServiceDatabase:
         """Creates collections if they do not exist and sets appropriate indexes."""
         collections = {
             "chat_groups": [
-                ("groupName", "text")  # Full-text search on group names (case-insensitive)
+                ("groupName", "text"),  # Full-text search on group names (case-insensitive)
                 ("users", 1),  # Index on 'users' for fast lookup (ascending order)
-                ("createdAt", -1),  # Sort by creation time (descending order)
+                ("createdAt", -1)  # Sort by creation time (descending order)
             ],
             "messages": [
                 ("chat_id", 1),  # Query messages by chat_id (ascending order)
@@ -58,5 +59,6 @@ class ChatServiceDatabase:
     
     
 # Example on how to create and retrieve the database
-#db = ChatServiceDatabase()
-#db.get_database()
+load_dotenv()
+db_instance = ChatServiceDatabase()
+print("Connected to DB:", db_instance.get_database().name)
