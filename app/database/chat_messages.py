@@ -7,39 +7,70 @@ class ChatMessages:
         # Access the "messages" collection from the database
         self.messages = db.get_database()["messages"]
 
-    def store_message(self, chat_id: str, sender_id: str, content: str) -> str:
+
+    def store_message(self, chat_id: ObjectId, sender_id: str, content: str) -> dict:
         """
         Store a new message in a chat.
-        
+
         Args:
-            chat_id (str): The ID of the chat group.
+            chat_id (ObjectId): The ID of the chat group.
             sender_id (str): The user ID of the message sender.
             content (str): The content of the message.
-            
+
         Returns:
-            str: The inserted message's ID.
+            dict: A dictionary containing the stored message details, including:
+                - "_id" (ObjectId): The unique ID of the message.
+                - "chat_id" (ObjectId): The chat group ID where the message was sent.
+                - "sender_id" (str): The ID of the user who sent the message.
+                - "content" (str): The message text.
+                - "sentAt" (datetime): The timestamp when the message was sent.
         """
         message_data = {
             "chat_id": ObjectId(chat_id),
             "sender_id": sender_id,
             "content": content,
-            "sentAt": datetime.utcnow()
+            "sentAt": datetime.utcnow().replace(microsecond=0)  # Truncate microseconds
         }
         result = self.messages.insert_one(message_data)
-        return str(result.inserted_id)
+        message_data["_id"] = result.inserted_id
+        return message_data
+    
 
-    def get_messages(self, chat_id: str, page: int = 1, limit: int = 20) -> list:
+    def get_message(self, message_id: ObjectId) -> dict | None:
         """
-        Retrieve paginated messages for a specific chat group.
-        
+        Retrieve a message by its ID.
+
         Args:
-            chat_id (str): The ID of the chat group.
-            page (int, optional): The page number. Defaults to 1.
-            limit (int, optional): Number of messages per page. Defaults to 20.
-            
+            message_id (ObjectId): The ID of the message to retrieve.
+
         Returns:
-            list: A list of message documents.
+            dict: A dictionary containing the message details, or None if not found.
         """
+        message = self.messages.find_one({"_id": ObjectId(message_id)})
+        return message
+
+
+    def get_messages(self, chat_id: ObjectId, page: int = 1, limit: int = 20) -> list:
+        """
+        Edit an existing message's content.
+
+        Args:
+            message_id (ObjectId): The ID of the message to edit.
+            new_content (str): The new content for the message.
+
+        Raises:
+            ValueError: If `page` or `limit` is less than 1.    
+        
+        Returns:
+            dict: A dictionary containing the updated message details, including:
+                - "_id" (ObjectId): The ID of the edited message.
+                - "content" (str): The updated content of the message.
+                - "editedAt" (datetime, optional): The timestamp when the message was edited.
+        """
+
+        if page < 1 or limit < 1:
+            raise ValueError("Page and limit must be greater than zero")
+
         skip = (page - 1) * limit
         cursor = self.messages.find({"chat_id": ObjectId(chat_id)}) \
                               .sort("sentAt", -1) \
@@ -47,27 +78,32 @@ class ChatMessages:
                               .limit(limit)
         messages = []
         for message in cursor:
-            message["_id"] = str(message["_id"])
-            message["chat_id"] = str(message["chat_id"])
+            message["_id"] = message["_id"]
+            message["chat_id"] = message["chat_id"]
             messages.append(message)
         return messages
+    
 
-    def edit_message(self, message_id: str, new_content: str) -> int:
+    def edit_message(self, message_id: ObjectId, new_content: str) -> dict:
         """
         Edit an existing message's content.
         
         Args:
-            message_id (str): The ID of the message to edit.
+            message_id (ObjectId): The ID of the message to edit.
             new_content (str): The new content for the message.
             
         Returns:
-            int: The number of documents modified.
+            dict: A dictionary containing the updated message details, including:
+                - "_id" (ObjectId): The ID of the edited message.
+                - "content" (str): The updated content of the message.
         """
-        result = self.messages.update_one(
-            {"_id": ObjectId(message_id)},
-            {"$set": {"content": new_content, "editedAt": datetime.utcnow()}}
-        )
-        return result.modified_count
+        if new_content is not None:
+            self.messages.update_one(
+                {"_id": ObjectId(message_id)},
+                {"$set": {"content": new_content, "editedAt": datetime.utcnow().replace(microsecond=0)}}
+            )
+        return {"_id": message_id, "content": new_content}
+    
 
     def delete_message(self, message_id: str) -> int:
         """
@@ -81,6 +117,6 @@ class ChatMessages:
         """
         result = self.messages.update_one(
             {"_id": ObjectId(message_id)},
-            {"$set": {"deletedAt": datetime.utcnow()}}
+            {"$set": {"deletedAt": datetime.utcnow().replace(microsecond=0)}}
         )
         return result.modified_count

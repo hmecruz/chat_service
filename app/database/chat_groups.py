@@ -64,13 +64,10 @@ class ChatGroups:
         Returns:
             dict: A dictionary with the chat_id and the new group name.
         """
-        update_data = {}
         if group_name is not None:
-            update_data["groupName"] = group_name
-        if update_data:
             self.chat_groups.update_one(
                 {"_id": ObjectId(chat_id)},
-                {"$set": update_data}
+                {"$set": {"groupName": group_name}}
             )
         return {"_id": chat_id, "groupName": group_name}
         
@@ -129,12 +126,24 @@ class ChatGroups:
     def get_chat_groups_for_user(self, user_id: str, page: int = 1, limit: int = 5) -> list:
         """
         Retrieve a paginated list of chat groups that include the specified user.
-        Returns a list of chat group documents.
+
+        Args:
+            user_id (str): The ID of the user whose chat groups are being retrieved.
+            page (int, optional): The page number for pagination (must be >= 1). Defaults to 1.
+            limit (int, optional): The number of chat groups per page (must be >= 1). Defaults to 5.
+
+        Raises:
+            ValueError: If `page` or `limit` is less than 1.
+
+        Returns:
+            list: A list of chat group documents that include the specified user.
         """
+        if page < 1 or limit < 1:
+            raise ValueError("Page and limit must be greater than zero")
+        
         skip = (page - 1) * limit
         cursor = self.chat_groups.find({"users": user_id}).skip(skip).limit(limit)
         groups = []
         for group in cursor:
-            group["chat_id"] = group["_id"]
             groups.append(group)
         return groups

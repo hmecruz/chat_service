@@ -16,6 +16,13 @@ def test_create_chat_group(chat_groups):
     assert set(chat_group["users"]) == set(users)
     assert isinstance(chat_group["createdAt"], datetime)
 
+    created_chat_group = chat_groups.chat_groups.find_one({"_id": chat_group["_id"]})
+    assert created_chat_group is not None
+    assert created_chat_group["_id"] == chat_group["_id"]
+    assert created_chat_group["groupName"] == chat_group["groupName"]
+    assert set(created_chat_group["users"]) == set(chat_group["users"])
+    assert created_chat_group["createdAt"] == chat_group["createdAt"]
+
 
 def test_get_chat_group(chat_groups):
     """Test retrieving a chat group."""
@@ -141,6 +148,7 @@ def test_get_chat_groups_for_user_no_groups(chat_groups):
     assert isinstance(result, list)
     assert len(result) == 0
 
+
 def test_get_chat_groups_for_user_pagination(chat_groups):
     """
     Test retrieving a paginated list of chat groups for a given user.
@@ -150,7 +158,7 @@ def test_get_chat_groups_for_user_pagination(chat_groups):
       - Page 1 returns 5 groups.
       - Page 2 returns 5 groups.
       - Page 3 returns an empty list.
-      - Each returned document contains "chat_id" as a string and "user1" in its "users" list.
+      - Each returned document contains "_id" as a ObjectId and "user1" in its "users" list.
     """
     # Create 10 chat groups where "user1" is always a member.
     total_groups = 10
@@ -172,12 +180,13 @@ def test_get_chat_groups_for_user_pagination(chat_groups):
     # Verify that each returned group contains "user1" and has a proper chat_id.
     for group in page1 + page2:
         assert "user1" in group.get("users", []), "The group must include 'user1'"
-        assert "chat_id" in group, "The group should have a 'chat_id' field"
-        # Ensure that chat_id is a valid ObjectId string.
+        assert "_id" in group, "The group should have a '_id' field"
+        # Ensure that _id is a valid ObjectId string.
         try:
-            ObjectId(group["chat_id"])
+            ObjectId(group["_id"])
         except Exception as e:
-            pytest.fail(f"chat_id '{group['chat_id']}' is not a valid ObjectId string: {e}")
+            pytest.fail(f"_id '{group['_id']}' is not a valid ObjectId string: {e}")
+
 
 def test_get_chat_groups_for_user_limit_over_total(chat_groups):
     """
@@ -194,3 +203,20 @@ def test_get_chat_groups_for_user_limit_over_total(chat_groups):
 
     results = chat_groups.get_chat_groups_for_user("user1", page=1, limit=10)
     assert len(results) == 3, "Expected to retrieve all 3 groups when limit is over the total"
+
+
+def test_get_chat_groups_for_user_negative_page_limit(chat_groups):
+    """Test behavior when negative or zero values are used for page or limit."""
+    user_id = "test_user"
+
+    with pytest.raises(ValueError, match="Page and limit must be greater than zero"):
+        chat_groups.get_chat_groups_for_user(user_id, page=-1, limit=5)
+    
+    with pytest.raises(ValueError, match="Page and limit must be greater than zero"):
+        chat_groups.get_chat_groups_for_user(user_id, page=1, limit=0)
+
+    with pytest.raises(ValueError, match="Page and limit must be greater than zero"):
+        chat_groups.get_chat_groups_for_user(user_id, page=0, limit=5)
+
+    with pytest.raises(ValueError, match="Page and limit must be greater than zero"):
+        chat_groups.get_chat_groups_for_user(user_id, page=2, limit=-3)
