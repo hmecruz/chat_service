@@ -29,37 +29,53 @@ channels:
       message:
         $ref: '#/components/messages/CreateChatEvent'
   
-  chat/{chatId}/user/add:
-    description: Channel to add a user to an existing chat group.
+  chat/{chatId}/users/add:
+    description: Channel to add users to an existing chat group.
     parameters:
       chatId:
         description: Unique identifier for the chat group.
         schema:
           type: string
     publish:
-      operationId: addUserToChatGroup
+      operationId: addUsersToChatGroup
       message:
-        $ref: '#/components/messages/AddUserRequest'
+        $ref: '#/components/messages/AddUsersRequest'
     subscribe:
       operationId: userAddedToChatGroup
       message:
-        $ref: '#/components/messages/AddUserEvent'
+        $ref: '#/components/messages/AddUsersEvent'
 
-  chat/{chatId}/user/remove:
-    description: Channel to remove a user from an existing chat group.
+  chat/{chatId}/users/remove:
+    description: Channel to remove users from an existing chat group.
     parameters:
       chatId:
         description: Unique identifier for the chat group.
         schema:
           type: string
     publish:
-      operationId: removeUserFromChatGroup
+      operationId: removeUsersFromChatGroup
       message:
-        $ref: '#/components/messages/RemoveUserRequest'
+        $ref: '#/components/messages/RemoveUsersRequest'
     subscribe:
       operationId: userRemovedFromChatGroup
       message:
-        $ref: '#/components/messages/RemoveUserEvent'
+        $ref: '#/components/messages/RemoveUsersEvent'
+
+  chat/{chatId}/name/update:
+    description: Channel to update the name of an existing chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: updateChatGroupName
+      message:
+        $ref: '#/components/messages/UpdateChatNameRequest'
+    subscribe:
+      operationId: chatGroupNameUpdated
+      message:
+        $ref: '#/components/messages/UpdateChatNameEvent'
 
   chat/delete:
     description: Channel to delete a chat group.
@@ -203,83 +219,124 @@ components:
           users: ["user1", "user2", "user3"]
           createdAt: "2025-03-03T12:00:00Z"
 
-    AddUserRequest:
-      name: AddUserRequest
-      title: Add User to Chat Group Request
+    AddUsersRequest:
+      name: AddUsersRequest
+      title: Add Users to Chat Group Request
       payload:
         type: object
         properties:
-          userId:
-            type: string
-            description: Identifier of the user to be added.
+          userIds:  # Changed to userIds, and made an array
+            type: array
+            items:
+              type: string
+            description: Identifiers of the users to be added.
         required:
-          - userId
+          - userIds  # Updated required field
         example:
-          - userId: "user4"
+          userIds: ["user4", "user5", "user6"]  # Example with multiple user IDs
 
-    AddUserEvent:
-      name: AddUserEvent
-      title: Add User to Chat Group Event
+    AddUsersEvent:
+      name: AddUsersEvent
+      title: Add Users to Chat Group Event
       payload:
         type: object
         properties:
           chatId:
             type: string
             description: Unique identifier for the chat group.
-          userId:
-            type: string
-            description: Identifier of the user added.
+          userIds:
+            type: array
+            items:
+              type: string
+            description: Identifiers of the users added.
           addedAt:
             type: string
             format: date-time
             description: Timestamp when the user was added.
         required:
           - chatId
-          - userId
+          - userIds
           - addedAt
         example:
           chatId: "chat123"
-          userId: "user4"
+          userIds: ["user4", "user5", "user6"]
           addedAt: "2025-03-03T12:10:00Z"
 
-    RemoveUserRequest:
-      name: RemoveUserRequest
-      title: Remove User from Chat Group Request
+    RemoveUsersRequest:
+      name: RemoveUsersRequest
+      title: Remove Users from Chat Group Request
       payload:
         type: object
         properties:
-          userId:
-            type: string
-            description: Identifier of the user to be removed.
+          userIds:  # Changed to userIds, and made an array
+            type: array
+            items:
+              type: string
+            description: Identifiers of the users to be removed.
         required:
-          - userId
+          - userIds  # Updated required field
         example:
-          userId: "user4"
+          userIds: ["user4", "user5"] # Example with multiple user IDs
 
-    RemoveUserEvent:
-      name: RemoveUserEvent
-      title: Remove User from Chat Group Event
+    RemoveUsersEvent:
+      name: RemoveUsersEvent
+      title: Remove Users from Chat Group Event
       payload:
         type: object
         properties:
           chatId:
             type: string
             description: Unique identifier for the chat group.
-          userId:
-            type: string
-            description: Identifier of the user removed.
+          userIds: # Changed to userIds, and made an array
+            type: array
+            items:
+              type: string
+            description: Identifiers of the users removed.
           removedAt:
             type: string
             format: date-time
-            description: Timestamp when the user was removed.
+            description: Timestamp when the users were removed.
         required:
           - chatId
-          - userId
+          - userIds # Updated required field
           - removedAt
         example:
           chatId: "chat123"
-          userId: "user4"
+          userIds: ["user4", "user5"]
           removedAt: "2025-03-03T12:10:00Z"
+
+    UpdateChatNameRequest:
+      name: UpdateChatNameRequest
+      title: Update Chat Group Name Request
+      payload:
+        type: object
+        properties:
+          newGroupName:
+            type: string
+            description: The new name for the chat group.
+        required:
+          - newGroupName
+        example:
+          newGroupName: "New Team Chat Name"
+
+    UpdateChatNameEvent:
+      name: UpdateChatNameEvent
+      title: Update Chat Group Name Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Unique identifier for the chat group.
+          newGroupName:
+            type: string
+            description: The updated name of the chat group.
+        required:
+          - chatId
+          - newGroupName
+        example:
+          chatId: "chat123"
+          newGroupName: "New Team Chat Name"
 
     DeleteChatRequest:
       name: DeleteChatRequest
