@@ -1,5 +1,5 @@
 from bson.objectid import ObjectId
-from datetime import datetime
+from datetime import datetime, UTC
 from .database_init import ChatServiceDatabase
 
 class ChatMessages:
@@ -29,7 +29,7 @@ class ChatMessages:
             "chat_id": ObjectId(chat_id),
             "sender_id": sender_id,
             "content": content,
-            "sentAt": datetime.utcnow().replace(microsecond=0)  # Truncate microseconds
+            "sentAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)  # Truncate microseconds
         }
         result = self.chat_messages.insert_one(message_data)
         message_data["_id"] = result.inserted_id
@@ -91,7 +91,7 @@ class ChatMessages:
         if new_content:
             self.chat_messages.update_one(
                 {"_id": ObjectId(message_id)},
-                {"$set": {"content": new_content, "editedAt": datetime.utcnow().replace(microsecond=0)}}
+                {"$set": {"content": new_content, "editedAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)}}
             )
         return {"_id": message_id, "content": new_content}
     

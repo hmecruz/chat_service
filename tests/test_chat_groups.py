@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, UTC
 from bson.objectid import ObjectId
 
 def test_create_chat_group(chat_groups):

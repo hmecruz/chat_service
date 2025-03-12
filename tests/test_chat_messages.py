@@ -1,6 +1,6 @@
 import pytest
 from bson.objectid import ObjectId
-from datetime import datetime
+from datetime import datetime, UTC
 
 def test_store_message(chat_messages):
     """Test storing a new message in a chat."""
@@ -60,8 +60,8 @@ def test_get_messages(chat_messages):
 
     # Insert test messages
     messages = [
-        {"_id": ObjectId(), "chat_id": chat_id, "sender_id": "user1", "content": "Message 1", "sentAt": datetime.utcnow().replace(microsecond=0)},
-        {"_id": ObjectId(), "chat_id": chat_id, "sender_id": "user2", "content": "Message 2", "sentAt": datetime.utcnow().replace(microsecond=0)},
+        {"_id": ObjectId(), "chat_id": chat_id, "sender_id": "user1", "content": "Message 1", "sentAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)},
+        {"_id": ObjectId(), "chat_id": chat_id, "sender_id": "user2", "content": "Message 2", "sentAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)},
     ]
     chat_messages.chat_messages.insert_many(messages)
 
@@ -148,7 +148,7 @@ def test_edit_message(chat_messages):
     new_content = "Updated message content."
 
     # Insert test message
-    chat_messages.chat_messages.insert_one({"_id": message_id, "chat_id": chat_id, "sender_id": "user1", "content": "Old Content", "sentAt": datetime.utcnow().replace(microsecond=0)})
+    chat_messages.chat_messages.insert_one({"_id": message_id, "chat_id": chat_id, "sender_id": "user1", "content": "Old Content", "sentAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)})
 
     result = chat_messages.edit_message(message_id, new_content)
     print(result)
@@ -173,7 +173,7 @@ def test_delete_message(chat_messages):
     message_id = ObjectId()
 
     # Insert test message
-    chat_messages.chat_messages.insert_one({"_id": message_id, "chat_id": ObjectId(), "sender_id": "user1", "content": "Message to delete", "sentAt": datetime.utcnow().replace(microsecond=0)})
+    chat_messages.chat_messages.insert_one({"_id": message_id, "chat_id": ObjectId(), "sender_id": "user1", "content": "Message to delete", "sentAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)})
 
     result = chat_messages.delete_message(str(message_id))
 

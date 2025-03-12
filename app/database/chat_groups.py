@@ -1,5 +1,5 @@
 from bson.objectid import ObjectId
-from datetime import datetime
+from datetime import datetime, UTC
 from .database_init import ChatServiceDatabase
 
 class ChatGroups:
@@ -29,7 +29,7 @@ class ChatGroups:
         chat_group = {
             "groupName": group_name,
             "users": users,
-            "createdAt":  datetime.utcnow().replace(microsecond=0)  # Truncate microseconds
+            "createdAt":  datetime.now(UTC).replace(tzinfo=None, microsecond=0)  # Truncate microseconds
         }
         result = self.chat_groups.insert_one(chat_group)
         chat_group["_id"] = result.inserted_id
