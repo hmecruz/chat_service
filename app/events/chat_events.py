@@ -2,6 +2,12 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 from datetime import datetime
 import uuid
+from datetime import datetime
+
+from app.main import chat_groups
+from app.main import chat_messages
+
+from utils.utils import convert_id_to_chat_id
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -13,21 +19,48 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # -------------------------------
 @socketio.on('createChatGroup')
 def handle_create_chat_group(data):
-    # Expecting data with keys: groupName and users (list)
-    group_name = data.get('groupName')
-    users = data.get('users')
-    if not group_name or not users or not isinstance(users, list):
+    # Expecting data with keys: groupName: str and users: list[str]
+    
+    try:
+        group_name = data.get('groupName')
+        if not group_name:
+            raise Exception("Missing groupName")
+        elif not isinstance(group_name, str):
+            raise Exception("Invalid groupName type")
+        elif len(group_name) > 25:
+            raise Exception("groupName exceeds 50 characters")
+        
+        users = data.get('users')
+        if not users:
+            raise Exception("Missing users")
+        elif not isinstance(users, list):
+            raise Exception("Invalid users type")
+        elif len(users) < 2:
+            raise Exception("At least 2 users required")
+        elif len(users) > 20:
+            raise Exception("Maximum 10 users allowed")
+        for user in users:
+            if not isinstance(user, str):
+                raise Exception("Invalid user type")
+            elif len(user) > 25:
+                raise Exception("User ID exceeds 25 characters")
+    except Exception as e:
         emit('error', {'error': 'Invalid payload for creating chat group'})
         return
 
-    chat_id = generate_id("chat")
-    created_at = datetime.utcnow().isoformat() + "Z"
-    response = {
-        'chatId': chat_id,
-        'groupName': group_name,
-        'users': users,
-        'createdAt': created_at
-    }
+    try:
+        response = chat_groups.create_chat_group(group_name, users)
+        if response:
+            emit('chatGroupCreated', {
+                'chatId': str(response['_id']),
+                'groupName': response['groupName'],
+                'users': response['users'],
+                'createdAt': response['createdAt'].isoformat()
+            })
+    except Exception as e:
+        emit('error', {'error': str(e)})
+        return
+    
     emit('chatGroupCreated', response, broadcast=True)
 
 # -------------------------------
