@@ -4,8 +4,8 @@ from .database_init import ChatServiceDatabase
 
 class ChatMessages:
     def __init__(self, db: ChatServiceDatabase):
-        # Access the "messages" collection from the database
-        self.messages = db.get_database()["messages"]
+        # Access the "chat_messages" collection from the database
+        self.chat_messages = db.get_database()["chat_messages"]
 
 
     def store_message(self, chat_id: ObjectId, sender_id: str, content: str) -> dict:
@@ -31,7 +31,7 @@ class ChatMessages:
             "content": content,
             "sentAt": datetime.utcnow().replace(microsecond=0)  # Truncate microseconds
         }
-        result = self.messages.insert_one(message_data)
+        result = self.chat_messages.insert_one(message_data)
         message_data["_id"] = result.inserted_id
         return message_data
     
@@ -46,43 +46,34 @@ class ChatMessages:
         Returns:
             dict: A dictionary containing the message details, or None if not found.
         """
-        message = self.messages.find_one({"_id": ObjectId(message_id)})
+        message = self.chat_messages.find_one({"_id": ObjectId(message_id)})
         return message
 
 
     def get_messages(self, chat_id: ObjectId, page: int = 1, limit: int = 20) -> list:
         """
-        Edit an existing message's content.
+        Retrieve paginated messages for a specific chat group.
 
         Args:
-            message_id (ObjectId): The ID of the message to edit.
-            new_content (str): The new content for the message.
+            chat_id (ObjectId): The chat group ID whose messages are being retrieved.
+            page (int, optional): The page number for pagination (must be >= 1). Defaults to 1.
+            limit (int, optional): The number of messages per page (must be >= 1). Defaults to 20.
 
         Raises:
-            ValueError: If `page` or `limit` is less than 1.    
-        
-        Returns:
-            dict: A dictionary containing the updated message details, including:
-                - "_id" (ObjectId): The ID of the edited message.
-                - "content" (str): The updated content of the message.
-                - "editedAt" (datetime, optional): The timestamp when the message was edited.
-        """
+            ValueError: If `page` or `limit` is less than 1.
 
+        Returns:
+            list: A list of message documents ordered by `sentAt` in descending order.
+        """
         if page < 1 or limit < 1:
             raise ValueError("Page and limit must be greater than zero")
 
         skip = (page - 1) * limit
-        cursor = self.messages.find({"chat_id": ObjectId(chat_id)}) \
+        cursor = self.chat_messages.find({"chat_id": ObjectId(chat_id)}) \
                               .sort("sentAt", -1) \
                               .skip(skip) \
                               .limit(limit)
-        messages = []
-        for message in cursor:
-            message["_id"] = message["_id"]
-            message["chat_id"] = message["chat_id"]
-            messages.append(message)
-        return messages
-    
+        return list(cursor)
 
     def edit_message(self, message_id: ObjectId, new_content: str) -> dict:
         """
@@ -97,8 +88,8 @@ class ChatMessages:
                 - "_id" (ObjectId): The ID of the edited message.
                 - "content" (str): The updated content of the message.
         """
-        if new_content is not None:
-            self.messages.update_one(
+        if new_content:
+            self.chat_messages.update_one(
                 {"_id": ObjectId(message_id)},
                 {"$set": {"content": new_content, "editedAt": datetime.utcnow().replace(microsecond=0)}}
             )
@@ -107,7 +98,7 @@ class ChatMessages:
 
     def delete_message(self, message_id: ObjectId) -> int:
         """
-        Permanent delete a message.
+        Permanently delete a message.
         
         Args:
             message_id (ObjectId): The ID of the message to delete.
@@ -115,5 +106,5 @@ class ChatMessages:
         Returns:
             int: The number of documents modified.
         """
-        result = self.messages.delete_one({"_id": ObjectId(message_id)})
+        result = self.chat_messages.delete_one({"_id": ObjectId(message_id)})
         return result.deleted_count

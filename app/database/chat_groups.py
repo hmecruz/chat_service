@@ -49,9 +49,8 @@ class ChatGroups:
         Returns:
             dict | None: The chat group document if found; otherwise, None.
         """
-        group = self.chat_groups.find_one({"_id": ObjectId(chat_id)})
-        return group
-    
+        return self.chat_groups.find_one({"_id": ObjectId(chat_id)})
+        
     
     def update_chat_group_name(self, chat_id: ObjectId, group_name: str) -> dict:
         """
@@ -64,7 +63,7 @@ class ChatGroups:
         Returns:
             dict: A dictionary with the chat_id and the new group name.
         """
-        if group_name is not None:
+        if group_name:
             self.chat_groups.update_one(
                 {"_id": ObjectId(chat_id)},
                 {"$set": {"groupName": group_name}}
@@ -81,7 +80,6 @@ class ChatGroups:
 
         Returns:
             int: The number of documents deleted (0 if not found, 1 if deleted).
-
         """
         result = self.chat_groups.delete_one({"_id": ObjectId(chat_id)})
         return result.deleted_count
@@ -89,24 +87,22 @@ class ChatGroups:
 
     def add_users_to_chat(self, chat_id: ObjectId, user_ids: list[str]) -> dict:
         """
-        Delete a chat group by its unique identifier.
-
-        This method removes the document from the chat_groups collection that matches
-        the provided ObjectId.
+        Add multiple users to a chat group.
 
         Args:
-            chat_id (ObjectId): The unique identifier (_id) of the chat group to delete.
+            chat_id (ObjectId): The unique identifier of the chat group.
+            user_ids (list[str]): A list of user IDs to add to the chat group.
 
         Returns:
-            int: The number of documents deleted (should be 1 if the group existed, or 0 if not).
+            dict: A dictionary containing the chat_id and the updated list of users.
         """
-        if user_ids is not []:
+        if user_ids:
             self.chat_groups.update_one(
                 {"_id": ObjectId(chat_id)},
                 {"$addToSet": {"users": {"$each": user_ids}}}
             )
         updated_group = self.get_chat_group(chat_id)
-        return {"_id": chat_id, "users": updated_group.get("users", [])}
+        return {"_id": chat_id, "users": updated_group.get("users", []) if updated_group else []}
 
 
     def remove_users_from_chat(self, chat_id: ObjectId, user_ids: list[str]) -> dict:
@@ -149,7 +145,4 @@ class ChatGroups:
         
         skip = (page - 1) * limit
         cursor = self.chat_groups.find({"users": user_id}).skip(skip).limit(limit)
-        groups = []
-        for group in cursor:
-            groups.append(group)
-        return groups
+        return list(cursor)

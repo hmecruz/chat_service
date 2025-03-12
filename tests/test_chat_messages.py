@@ -17,7 +17,7 @@ def test_store_message(chat_messages):
     assert isinstance(result["sentAt"], datetime)
     assert isinstance(result["_id"], ObjectId)
 
-    stored_message = chat_messages.messages.find_one({"_id": result["_id"]})
+    stored_message = chat_messages.chat_messages.find_one({"_id": result["_id"]})
     assert stored_message is not None
     assert stored_message["chat_id"] == chat_id
     assert stored_message["sender_id"] == sender_id
@@ -63,7 +63,7 @@ def test_get_messages(chat_messages):
         {"_id": ObjectId(), "chat_id": chat_id, "sender_id": "user1", "content": "Message 1", "sentAt": datetime.utcnow().replace(microsecond=0)},
         {"_id": ObjectId(), "chat_id": chat_id, "sender_id": "user2", "content": "Message 2", "sentAt": datetime.utcnow().replace(microsecond=0)},
     ]
-    chat_messages.messages.insert_many(messages)
+    chat_messages.chat_messages.insert_many(messages)
 
     result = chat_messages.get_messages(chat_id, page=1, limit=2)
 
@@ -148,7 +148,7 @@ def test_edit_message(chat_messages):
     new_content = "Updated message content."
 
     # Insert test message
-    chat_messages.messages.insert_one({"_id": message_id, "chat_id": chat_id, "sender_id": "user1", "content": "Old Content", "sentAt": datetime.utcnow().replace(microsecond=0)})
+    chat_messages.chat_messages.insert_one({"_id": message_id, "chat_id": chat_id, "sender_id": "user1", "content": "Old Content", "sentAt": datetime.utcnow().replace(microsecond=0)})
 
     result = chat_messages.edit_message(message_id, new_content)
     print(result)
@@ -157,7 +157,7 @@ def test_edit_message(chat_messages):
     assert result["_id"] == message_id
     assert result["content"] == new_content
 
-    updated_message = chat_messages.messages.find_one({"_id": message_id})
+    updated_message = chat_messages.chat_messages.find_one({"_id": message_id})
     print(updated_message)
     assert updated_message is not None
     assert updated_message["_id"] == message_id
@@ -173,12 +173,12 @@ def test_delete_message(chat_messages):
     message_id = ObjectId()
 
     # Insert test message
-    chat_messages.messages.insert_one({"_id": message_id, "chat_id": ObjectId(), "sender_id": "user1", "content": "Message to delete", "sentAt": datetime.utcnow().replace(microsecond=0)})
+    chat_messages.chat_messages.insert_one({"_id": message_id, "chat_id": ObjectId(), "sender_id": "user1", "content": "Message to delete", "sentAt": datetime.utcnow().replace(microsecond=0)})
 
     result = chat_messages.delete_message(str(message_id))
 
     assert isinstance(result, int)
     assert result == 1
 
-    deleted_message = chat_messages.messages.find_one({"_id": message_id})
+    deleted_message = chat_messages.chat_messages.find_one({"_id": message_id})
     assert deleted_message is None
