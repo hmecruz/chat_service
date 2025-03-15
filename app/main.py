@@ -1,25 +1,18 @@
-from dotenv import load_dotenv
 from flask import Flask
 from flask_socketio import SocketIO
-from database.chat_groups import ChatGroups
-from database.chat_messages import ChatMessages
-from database.database_init import ChatServiceDatabase
+from app.events.chat_groups_events import *
+from app.xmpp.manager import XMPPManager
 
-def create_app():
-    app = Flask(__name__)
-    app.config.from_object('config')  # Load configurations
-    socketio.init_app(app, cors_allowed_origins='*')
-    return app
+app = Flask(__name__)
+socketio = SocketIO(app, async_mode='eventlet')
 
-socketio = SocketIO()
+# Initialize XMPP manager
+xmpp_manager = XMPPManager(jid='user@localhost', password='password', db_instance=some_db_instance, websocket_url='ws://localhost:5280/xmpp-websocket')
 
-if __name__ == "__main__":
-    load_dotenv()
-    app = create_app()
+# Start the XMPP session when the app starts
+@app.before_first_request
+def start_xmpp():
+    xmpp_manager.start_xmpp_session()
+
+if __name__ == '__main__':
     socketio.run(app, debug=True)
-
-    db_instance = ChatServiceDatabase()
-    chat_groups = ChatGroups(db_instance.get_database())
-    chat_messages = ChatMessages(db_instance.get_database())
-    
-

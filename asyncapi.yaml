@@ -249,18 +249,12 @@ components:
             items:
               type: string
             description: Identifiers of the users added.
-          addedAt:
-            type: string
-            format: date-time
-            description: Timestamp when the user was added.
         required:
           - chatId
           - userIds
-          - addedAt
         example:
           chatId: "chat123"
           userIds: ["user4", "user5", "user6"]
-          addedAt: "2025-03-03T12:10:00Z"
 
     RemoveUsersRequest:
       name: RemoveUsersRequest
@@ -361,16 +355,15 @@ components:
           chatId:
             type: string
             description: Unique identifier for the chat group.
-          deletedAt:
-            type: string
-            format: date-time
-            description: Timestamp when the chat group was deleted.
+          deleted:
+            type: boolean
+            description: Boolean to check if the chat was deleted or not
         required:
           - chatId
-          - deletedAt
+          - deleted
         example:
           chatId: "chat123"
-          deletedAt: "2025-03-03T12:15:00Z"
+          deleted: true
 
     SendMessageRequest:
       name: SendMessageRequest
