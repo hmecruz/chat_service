@@ -1,134 +1,153 @@
-from flask_socketio import emit
-from utils.validators import validate_group_name, validate_users 
+from flask import Flask, request
+from flask_socketio import SocketIO, emit
 
+# Import our DAL & service layers
+from app.database.database_init import ChatServiceDatabase
+from app.database.chat_groups import ChatGroups
+from app.services.chat_groups_services import ChatGroupsService
 
-# -------------------------------
+app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Initialize database, DAL, and service instances
+db = ChatServiceDatabase()
+chat_groups_dal = ChatGroups(db)
+chat_groups_service = ChatGroupsService(chat_groups_dal)
+
+# -----------------------------------------------------------------------------
+# Event: Create Chat Group
 # Channel: chat/create
-# Publish: createChatGroup (CreateChatRequest)
-# Subscribe: chatGroupCreated (CreateChatEvent)
-# -------------------------------
-@socketio.on('createChatGroup')
-def handle_create_chat_group(data):
-    # groupName: str 
-    # users: list[str]
-    
+# Publish OperationId: createChatGroup
+# Subscribe OperationId: chatGroupCreated
+# -----------------------------------------------------------------------------
+@socketio.on('chat/create')
+def handle_create_chat(data):
+    """
+    Expected payload (CreateChatRequest):
+      {
+        "groupName": "Team Chat",
+        "users": ["user1", "user2", "user3"]
+      }
+    """
     try:
-        group_name = validate_group_name(data.get('groupName'))
-        users = validate_users(data.get('users'))
-    except ValueError as e:
-        emit('error', {'error': str(e)})
-        return
-            
-    try:
-        response = chat_groups.create_chat_group(group_name, users)
-        if response:
-            emit('chatGroupCreated', {
-                'chatId': str(response['_id']),
-                'groupName': response['groupName'],
-                'users': response['users'],
-                'createdAt': response['createdAt'].isoformat()
-            })
+        group_name = data.get('groupName')
+        users = data.get('users')
+        chat_group = chat_groups_service.create_chat_group(group_name, users)
+        response = {
+            "chatId": str(chat_group["_id"]),
+            "groupName": chat_group["groupName"],
+            "users": chat_group["users"],
+            "createdAt": chat_group["createdAt"]
+        }
+        emit('chatGroupCreated', response, broadcast=True)
     except Exception as e:
         emit('error', {'error': str(e)})
-        return
-    
-    emit('chatGroupCreated', response, broadcast=True)
 
-# -------------------------------
-# Channel: chat/{chatId}/user/add
-# Publish: addUserToChatGroup (AddUserRequest)
-# Subscribe: userAddedToChatGroup (AddUserEvent)
-# -------------------------------
-@socketio.on('addUserToChatGroup')
-def handle_add_user_to_chat_group(data):
-    # Expecting data with chatId and userId
-    chat_id = data.get('chatId')
-    user_id = data.get('userId')
-    if not chat_id or not user_id:
-        emit('error', {'error': 'Invalid payload for adding user to chat group'})
-        return
+# -----------------------------------------------------------------------------
+# Event: Update Chat Group Name
+# Channel: chat/{chatId}/name/update
+# Publish OperationId: updateChatGroupName
+# Subscribe OperationId: chatGroupNameUpdated
+# -----------------------------------------------------------------------------
+@socketio.on('chat/name/update')
+def handle_update_chat_name(data):
+    """
+    Expected payload (UpdateChatNameRequest):
+      {
+        "chatId": "chat123",
+        "newGroupName": "New Team Chat Name"
+      }
+    """
+    try:
+        chat_id = data.get('chatId')
+        new_group_name = data.get('newGroupName')
+        updated_group = chat_groups_service.update_chat_group_name(chat_id, new_group_name)
+        response = {
+            "chatId": chat_id,
+            "newGroupName": updated_group["groupName"]
+        }
+        emit('chatGroupNameUpdated', response, broadcast=True)
+    except Exception as e:
+        emit('error', {'error': str(e)})
 
-    added_at = datetime.utcnow().isoformat() + "Z"
-    response = {
-        'chatId': chat_id,
-        'userId': user_id,
-        'addedAt': added_at
-    }
-    emit('userAddedToChatGroup', response, broadcast=True)
-
-# -------------------------------
-# Channel: chat/{chatId}/user/remove
-# Publish: removeUserFromChatGroup (RemoveUserRequest)
-# Subscribe: userRemovedFromChatGroup (RemoveUserEvent)
-# -------------------------------
-@socketio.on('removeUserFromChatGroup')
-def handle_remove_user_from_chat_group(data):
-    # Expecting data with chatId and userId
-    chat_id = data.get('chatId')
-    user_id = data.get('userId')
-    if not chat_id or not user_id:
-        emit('error', {'error': 'Invalid payload for removing user from chat group'})
-        return
-
-    removed_at = datetime.utcnow().isoformat() + "Z"
-    response = {
-        'chatId': chat_id,
-        'userId': user_id,
-        'removedAt': removed_at
-    }
-    emit('userRemovedFromChatGroup', response, broadcast=True)
-
-# -------------------------------
+# -----------------------------------------------------------------------------
+# Event: Delete Chat Group
 # Channel: chat/delete
-# Publish: deleteChatGroup (DeleteChatRequest)
-# Subscribe: chatGroupDeleted (DeleteChatEvent)
-# -------------------------------
-@socketio.on('deleteChatGroup')
-def handle_delete_chat_group(data):
-    # Expecting data with chatId
-    chat_id = data.get('chatId')
-    if not chat_id:
-        emit('error', {'error': 'Invalid payload for deleting chat group'})
-        return
+# Publish OperationId: deleteChatGroup
+# Subscribe OperationId: chatGroupDeleted
+# -----------------------------------------------------------------------------
+@socketio.on('chat/delete')
+def handle_delete_chat(data):
+    """
+    Expected payload (DeleteChatRequest):
+      {
+        "chatId": "chat123"
+      }
+    """
+    try:
+        chat_id = data.get('chatId')
+        result = chat_groups_service.delete_chat_group(chat_id)
+        response = {
+            "chatId": chat_id,
+            "deleted": result
+        }
+        emit('chatGroupDeleted', response, broadcast=True)
+    except Exception as e:
+        emit('error', {'error': str(e)})
 
-    deleted_at = datetime.utcnow().isoformat() + "Z"
-    response = {
-        'chatId': chat_id,
-        'deletedAt': deleted_at
-    }
-    emit('chatGroupDeleted', response, broadcast=True)
+# -----------------------------------------------------------------------------
+# Event: Add Users to Chat Group
+# Channel: chat/{chatId}/users/add
+# Publish OperationId: addUsersToChatGroup
+# Subscribe OperationId: userAddedToChatGroup
+# -----------------------------------------------------------------------------
+@socketio.on('chat/users/add')
+def handle_add_users(data):
+    """
+    Expected payload (AddUsersRequest):
+      {
+        "chatId": "chat123",
+        "userIds": ["user4", "user5", "user6"]
+      }
+    """
+    try:
+        chat_id = data.get('chatId')
+        user_ids = data.get('userIds')
+        added_users = chat_groups_service.add_users_to_chat(chat_id, user_ids)
+        response = {
+            "chatId": chat_id,
+            "userIds": added_users
+        }
+        emit('usersAddedToChatGroup', response, broadcast=True)
+    except Exception as e:
+        emit('error', {'error': str(e)})
 
-# -------------------------------
-# Channel: user/{userId}/chats
-# Publish: requestUserChats (ChatListRequest)
-# Subscribe: getUserChats (ChatListEvent)
-# -------------------------------
-@socketio.on('requestUserChats')
-def handle_request_user_chats(data):
-    # Expecting data with userId, page, and limit
-    user_id = data.get('userId')
-    page = data.get('page')
-    limit = data.get('limit')
-    if not user_id or page is None or limit is None:
-        emit('error', {'error': 'Invalid payload for user chats'})
-        return
-
-    chats = []
-    for i in range(limit):
-        chats.append({
-            'chatId': generate_id("chat"),
-            'groupName': f"Group {i+1}",
-            'lastMessage': "Last message excerpt",
-            'lastUpdated': datetime.utcnow().isoformat() + "Z"
-        })
-    response = {
-        'userId': user_id,
-        'page': page,
-        'limit': limit,
-        'chats': chats
-    }
-    emit('getUserChats', response)
+# -----------------------------------------------------------------------------
+# Event: Remove Users from Chat Group
+# Channel: chat/{chatId}/users/remove
+# Publish OperationId: removeUsersFromChatGroup
+# Subscribe OperationId: userRemovedFromChatGroup
+# -----------------------------------------------------------------------------
+@socketio.on('chat/users/remove')
+def handle_remove_users(data):
+    """
+    Expected payload (RemoveUsersRequest):
+      {
+        "chatId": "chat123",
+        "userIds": ["user4", "user5"]
+      }
+    """
+    try:
+        chat_id = data.get('chatId')
+        user_ids = data.get('userIds')
+        removed_users = chat_groups_service.remove_users_from_chat(chat_id, user_ids)
+        response = {
+            "chatId": chat_id,
+            "userIds": removed_users
+        }
+        emit('usersRemovedFromChatGroup', response, broadcast=True)
+    except Exception as e:
+        emit('error', {'error': str(e)})
 
 if __name__ == '__main__':
-    # Run on port 8080 to match the AsyncAPI production server spec.
     socketio.run(app, host='0.0.0.0', port=8080, debug=True)

@@ -15,8 +15,8 @@ class ChatGroups:
             "createdAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)
         }
         result = self.chat_groups.insert_one(chat_group)
-        chat_group["_id"] = result.inserted_id
-        return chat_group
+        return result.inserted_id
+       
 
 
     def get_chat_group(self, chat_id: str) -> dict | None:

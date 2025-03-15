@@ -28,38 +28,6 @@ channels:
       operationId: chatGroupCreated
       message:
         $ref: '#/components/messages/CreateChatEvent'
-  
-  chat/{chatId}/users/add:
-    description: Channel to add users to an existing chat group.
-    parameters:
-      chatId:
-        description: Unique identifier for the chat group.
-        schema:
-          type: string
-    publish:
-      operationId: addUsersToChatGroup
-      message:
-        $ref: '#/components/messages/AddUsersRequest'
-    subscribe:
-      operationId: userAddedToChatGroup
-      message:
-        $ref: '#/components/messages/AddUsersEvent'
-
-  chat/{chatId}/users/remove:
-    description: Channel to remove users from an existing chat group.
-    parameters:
-      chatId:
-        description: Unique identifier for the chat group.
-        schema:
-          type: string
-    publish:
-      operationId: removeUsersFromChatGroup
-      message:
-        $ref: '#/components/messages/RemoveUsersRequest'
-    subscribe:
-      operationId: userRemovedFromChatGroup
-      message:
-        $ref: '#/components/messages/RemoveUsersEvent'
 
   chat/{chatId}/name/update:
     description: Channel to update the name of an existing chat group.
@@ -87,6 +55,38 @@ channels:
       operationId: chatGroupDeleted
       message:
         $ref: '#/components/messages/DeleteChatEvent'
+  
+  chat/{chatId}/users/add:
+    description: Channel to add users to an existing chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: addUsersToChatGroup
+      message:
+        $ref: '#/components/messages/AddUsersRequest'
+    subscribe:
+      operationId: usersAddedToChatGroup
+      message:
+        $ref: '#/components/messages/AddUsersEvent'
+
+  chat/{chatId}/users/remove:
+    description: Channel to remove users from an existing chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: removeUsersFromChatGroup
+      message:
+        $ref: '#/components/messages/RemoveUsersRequest'
+    subscribe:
+      operationId: usersRemovedFromChatGroup
+      message:
+        $ref: '#/components/messages/RemoveUsersEvent'
 
   chat/{chatId}/message:
     description: Channel for sending and receiving messages in a chat group.
@@ -286,18 +286,12 @@ components:
             items:
               type: string
             description: Identifiers of the users removed.
-          removedAt:
-            type: string
-            format: date-time
-            description: Timestamp when the users were removed.
         required:
           - chatId
           - userIds # Updated required field
-          - removedAt
         example:
           chatId: "chat123"
           userIds: ["user4", "user5"]
-          removedAt: "2025-03-03T12:10:00Z"
 
     UpdateChatNameRequest:
       name: UpdateChatNameRequest

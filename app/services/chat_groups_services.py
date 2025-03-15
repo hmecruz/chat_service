@@ -1,5 +1,5 @@
 from app.database.chat_groups import ChatGroups
-from app.utils.validators import validate_group_name, validate_users
+from app.utils.validators import validate_chat_id, validate_group_name, validate_users
 
 class ChatGroupsService:
     def __init__(self, chat_groups_dal: ChatGroups):
@@ -10,16 +10,26 @@ class ChatGroupsService:
         validate_group_name(group_name)
         validate_users(users)
 
-        chat_group = self.chat_groups_dal.create_chat_group(group_name, users)
+        chat_id = self.chat_groups_dal.create_chat_group(group_name, users)
 
-        if not chat_group or "_id" not in chat_group:
-            raise RuntimeError("Failed to create chat group")
+        if not chat_id:
+            raise ValueError("Chat group not created")
 
+        chat_group = self.chat_groups_dal.get_chat_group(group_name)
+        
+        if not chat_group:
+            raise ValueError("Chat group not created")
+        if chat_group["groupName"] != group_name:
+            raise ValueError("Chat group name not set correctly")
+        if chat_group["users"] != users:
+            raise ValueError("Chat group users not set correctly")
+        
         return chat_group
-
+        
 
     def update_chat_group_name(self, chat_id: str, group_name: str) -> dict:
         """Validates and updates a chat group's name."""
+        validate_chat_id(chat_id)
         validate_group_name(group_name)
         self.chat_groups_dal.update_chat_group_name(chat_id, group_name)
 
@@ -35,6 +45,7 @@ class ChatGroupsService:
     
     def delete_chat_group(self, chat_id: str) -> bool:
         """Deletes a chat group."""
+        validate_chat_id(chat_id)
         deleted_count = self.chat_groups_dal.delete_chat_group(chat_id)
         
         if deleted_count == 1:
@@ -45,6 +56,7 @@ class ChatGroupsService:
 
     def add_users_to_chat(self, chat_id: str, user_ids: list[str]):
         """Validates and adds users to a chat group, verifying success."""
+        validate_chat_id(chat_id)
         validate_users(user_ids)
 
         self.chat_groups_dal.add_users_to_chat(chat_id, user_ids)
@@ -62,6 +74,7 @@ class ChatGroupsService:
 
     def remove_users_from_chat(self, chat_id: str, user_ids: list[str]):
         """Removes users from a chat group."""
+        validate_chat_id(chat_id)
         validate_users(user_ids)
         self.chat_groups_dal.remove_users_from_chat(chat_id, user_ids)
 

@@ -46,5 +46,5 @@ class ChatMessages:
 
     def delete_message(self, message_id: str) -> bool:
         """Deletes a message by ID."""
-        result = self.chat_messages.delete_one({"_id": message_id})
+        result = self.chat_messages.delete_one({"_id": ObjectId(message_id)})
         return result.deleted_count > 0

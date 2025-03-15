@@ -1,5 +1,13 @@
 from utils.constants import *
 
+def validate_chat_id(chat_id: str) -> str:
+    """Validate chat ID with rules."""
+    if not chat_id:
+        raise ValueError("Missing chatId field")
+    if not isinstance(chat_id, str):
+        raise ValueError(f"Invalid chatId type {type(chat_id)}. Expected string")
+    return chat_id
+
 def validate_group_name(group_name: str) -> str:
     """Validate group name with rules."""
     if not group_name:
@@ -10,7 +18,7 @@ def validate_group_name(group_name: str) -> str:
         raise ValueError(f"groupName exceeds {MAX_GROUP_NAME_LENGTH} characters")
     return group_name
 
-def validate_users(users: list) -> list:
+def validate_users(users: list[str]) -> list[str]:
     """Validate users list with rules."""
     if not users:
         raise ValueError("Missing users field")
