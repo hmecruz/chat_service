@@ -1,5 +1,5 @@
 from app.database.chat_groups import ChatGroups
-from app.utils.validators import validate_chat_id, validate_group_name, validate_users
+from app.utils.validators import validate_id, validate_group_name, validate_users
 
 class ChatGroupsService:
     def __init__(self, chat_groups_dal: ChatGroups):
@@ -29,7 +29,7 @@ class ChatGroupsService:
 
     def update_chat_group_name(self, chat_id: str, group_name: str) -> dict:
         """Validates and updates a chat group's name."""
-        validate_chat_id(chat_id)
+        validate_id(chat_id)
         validate_group_name(group_name)
         self.chat_groups_dal.update_chat_group_name(chat_id, group_name)
 
@@ -45,7 +45,7 @@ class ChatGroupsService:
     
     def delete_chat_group(self, chat_id: str) -> bool:
         """Deletes a chat group."""
-        validate_chat_id(chat_id)
+        validate_id(chat_id)
         deleted_count = self.chat_groups_dal.delete_chat_group(chat_id)
         
         if deleted_count == 1:
@@ -56,7 +56,7 @@ class ChatGroupsService:
 
     def add_users_to_chat(self, chat_id: str, user_ids: list[str]):
         """Validates and adds users to a chat group, verifying success."""
-        validate_chat_id(chat_id)
+        validate_id(chat_id)
         validate_users(user_ids)
 
         self.chat_groups_dal.add_users_to_chat(chat_id, user_ids)
@@ -74,7 +74,7 @@ class ChatGroupsService:
 
     def remove_users_from_chat(self, chat_id: str, user_ids: list[str]):
         """Removes users from a chat group."""
-        validate_chat_id(chat_id)
+        validate_id(chat_id)
         validate_users(user_ids)
         self.chat_groups_dal.remove_users_from_chat(chat_id, user_ids)
 

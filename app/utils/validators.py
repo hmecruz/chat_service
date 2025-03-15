@@ -1,12 +1,12 @@
 from utils.constants import *
 
-def validate_chat_id(chat_id: str) -> str:
+def validate_id(id: str) -> str:
     """Validate chat ID with rules."""
-    if not chat_id:
-        raise ValueError("Missing chatId field")
-    if not isinstance(chat_id, str):
-        raise ValueError(f"Invalid chatId type {type(chat_id)}. Expected string")
-    return chat_id
+    if not id:
+        raise ValueError("Missing ID field")
+    if not isinstance(id, str):
+        raise ValueError(f"Invalid ID type {type(id)}. Expected string")
+    return id
 
 def validate_group_name(group_name: str) -> str:
     """Validate group name with rules."""
@@ -36,3 +36,13 @@ def validate_users(users: list[str]) -> list[str]:
             raise ValueError(f"User ID exceeds {MAX_USER_ID_LENGTH} characters")
     
     return users
+
+def validate_message_content(content: str) -> str:
+    """Validate message content with rules."""
+    if not content:
+        raise ValueError("Missing content field")
+    if not isinstance(content, str):
+        raise ValueError(f"Invalid content type {type(content)}. Expected string")
+    if len(content) > MAX_MESSAGE_LENGTH:
+        raise ValueError(f"Message content exceeds {MAX_MESSAGE_LENGTH} characters")
+    return content

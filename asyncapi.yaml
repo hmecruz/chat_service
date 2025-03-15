@@ -100,7 +100,7 @@ channels:
       message:
         $ref: '#/components/messages/SendMessageRequest'
     subscribe:
-      operationId: receiveMessage
+      operationId: receiveMessages
       message:
         $ref: '#/components/messages/SendMessageEvent'
 
@@ -511,18 +511,12 @@ components:
           messageId:
             type: string
             description: Unique identifier for the message.
-          deletedAt:
-            type: string
-            format: date-time
-            description: Timestamp when the message was deleted.
         required:
           - chatId
           - messageId
-          - deletedAt
         example:
           chatId: "chat123"
           messageId: "msg567"
-          deletedAt: "2025-03-03T12:25:00Z"
 
     MessageHistoryRequest:
       name: MessageHistory

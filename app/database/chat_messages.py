@@ -20,10 +20,9 @@ class ChatMessages:
             "sentAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)  # Truncate microseconds
         }
         result = self.chat_messages.insert_one(message_data)
-        message_data["_id"] = result.inserted_id
-        return message_data
-    
-
+        return result.inserted_id
+        
+        
     def fetch_message(self, message_id: str) -> dict | None:
         """Retrieves a message by ID."""
         return self.chat_messages.find_one({"_id": ObjectId(message_id)})

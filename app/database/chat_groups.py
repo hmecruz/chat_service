@@ -18,7 +18,6 @@ class ChatGroups:
         return result.inserted_id
        
 
-
     def get_chat_group(self, chat_id: str) -> dict | None:
         """Retrieve a chat group by ID."""
         return self.chat_groups.find_one({"_id": ObjectId(chat_id)})
