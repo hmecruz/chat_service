@@ -69,55 +69,6 @@ class ChatClient(slixmpp.ClientXMPP):
         msg['body'] = message
         msg.send()
 
-# Flask-SocketIO event handler
-@socketio.on('chat/create')
-def handle_chat_create(data):
-    chat_groups_dal = ChatGroups(ChatServiceDatabase())
-    result = chat_groups_dal.create_chat_group(data['payload']['groupName'], data['payload']['users'])
-    emit('chat/create/event', {"payload": result})
-
-@socketio.on('chat/{chatId}/users/add')
-def handle_add_users(data):
-    chat_groups_dal = ChatGroups(ChatServiceDatabase())
-    result = chat_groups_dal.add_users_to_chat(ObjectId(data['payload']['chatId']), data['payload']['userIds'])
-    emit('chat/{chatId}/users/add/event', {"payload": result})
-
-@socketio.on('chat/{chatId}/message')
-def handle_chat_message(data):
-    chat_messages_dal = ChatMessages(ChatServiceDatabase())
-    result = chat_messages_dal.store_message(
-        ObjectId(data['payload']['chatId']),
-        data['payload']['senderId'],
-        data['payload']['content']
-    )
-    emit('chat/{chatId}/message/event', {"payload": result})
-
-    # Send the message to the XMPP MUC room
-    xmpp_client.send_muc_message('testroom@conference.localhost', data['payload']['content'])
-
-@socketio.on('chat/{chatId}/message/edit')
-def handle_edit_message(data):
-    chat_messages_dal = ChatMessages(ChatServiceDatabase())
-    result = chat_messages_dal.edit_message(ObjectId(data['payload']['messageId']), data['payload']['newContent'])
-    emit('chat/{chatId}/message/edit/event', {"payload": result})
-
-@socketio.on('chat/{chatId}/message/delete')
-def handle_delete_message(data):
-    chat_messages_dal = ChatMessages(ChatServiceDatabase())
-    result = chat_messages_dal.delete_message(ObjectId(data['payload']['messageId']))
-    emit('chat/{chatId}/message/delete/event', {"payload": {"messageId": data['payload']['messageId'], "deletedCount": result}})
-
-@socketio.on('chat/{chatId}/message/history')
-def handle_message_history(data):
-    chat_messages_dal = ChatMessages(ChatServiceDatabase())
-    result = chat_messages_dal.get_messages(ObjectId(data['payload']['chatId']), data['payload']['page'], data['payload']['limit'])
-    emit('chat/{chatId}/message/history/event', {"payload": result})
-
-@socketio.on('user/{userId}/chats')
-def handle_user_chats(data):
-    chat_groups_dal = ChatGroups(ChatServiceDatabase())
-    result = chat_groups_dal.get_chat_groups_for_user(data['payload']['userId'], data['payload']['page'], data['payload']['limit'])
-    emit('user/{userId}/chats/event', {"payload": result})
 
 # Initialize and run the Flask-SocketIO server
 def run_flask_app():

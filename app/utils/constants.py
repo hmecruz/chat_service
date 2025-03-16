@@ -1,5 +1,3 @@
-# Description: Constants used in the application.
-
 # -----------------------------------------------------------------------------
 # Group Name and User ID Length
 MAX_GROUP_NAME_LENGTH = 25
