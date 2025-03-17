@@ -1,7 +1,6 @@
 import logging
 import slixmpp
 from slixmpp.exceptions import IqError, IqTimeout
-from flask import current_app
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)-8s %(message)s')
@@ -39,7 +38,7 @@ class ChatClient(slixmpp.ClientXMPP):
         except IqTimeout:
             logging.error("No response from MUC server.")
 
-    def message_received(self, msg):
+    def message(self, msg):
         """Handles incoming messages."""
         if msg['type'] in ('chat', 'normal'):
             logging.info(f"Message from {msg['from']}: {msg['body']}")

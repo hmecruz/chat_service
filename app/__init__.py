@@ -47,9 +47,9 @@ def create_app():
     app.config['chat_groups_service'] = chat_groups_service
     app.config['chat_messages_service'] = chat_messages_service 
 
-    initialize_xmpp_client(XmppConfig.JID, XmppConfig.PASSWORD, XmppConfig.WEBSOCKET_URL)
-    
-    register_chat_group_events(socketio)
-    register_chat_message_events(socketio)
+    with app.app_context():
+        initialize_xmpp_client(XmppConfig.JID, XmppConfig.PASSWORD, XmppConfig.WEBSOCKET_URL)
+        register_chat_group_events(socketio)
+        register_chat_message_events(socketio)
 
     return app
