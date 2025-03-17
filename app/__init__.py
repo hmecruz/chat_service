@@ -1,7 +1,8 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask
 from flask_socketio import SocketIO
-
-from dotenv import load_dotenv
 
 from .database.database_init import ChatServiceDatabase
 from .database.chat_groups import ChatGroups
@@ -15,7 +16,7 @@ from .events.register_chat_messages_events import register_chat_message_events
 
 from .xmpp import initialize_xmpp_client
 
-#from config.xmpp_config import XmppConfig
+from config.xmpp_config import XmppConfig
 
 # Create a global SocketIO instance
 socketio = SocketIO(cors_allowed_origins="*")
@@ -23,7 +24,7 @@ socketio = SocketIO(cors_allowed_origins="*")
 def create_app():
 
     # Load environment variables from .env file 
-    load_dotenv()
+    #load_dotenv()
 
     app = Flask(__name__)
     # Load configuration from a config file or object
