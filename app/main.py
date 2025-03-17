@@ -1,7 +1,11 @@
 # app/main.py
 from app import create_app, socketio
+from xmpp import initialize_xmpp_client
 
 app = create_app()
+
+with app.app_context():
+    initialize_xmpp_client()
 
 if __name__ == '__main__':
     # Start the Flask-SocketIO server.
