@@ -1,16 +1,7 @@
-import asyncio
 import logging
 import slixmpp
 from slixmpp.exceptions import IqError, IqTimeout
 from flask import current_app
-from datetime import datetime, timezone
-
-# Import your DAL and service layers
-from app.database.database_init import ChatServiceDatabase
-from app.database.chat_groups import ChatGroups
-from app.database.chat_messages import ChatMessages
-from app.services.chat_groups_services import ChatGroupsService
-from app.services.chat_messages_services import ChatMessagesService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)-8s %(message)s')

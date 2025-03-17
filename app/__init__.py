@@ -3,15 +3,19 @@ from flask_socketio import SocketIO
 
 from dotenv import load_dotenv
 
-from app.database.database_init import ChatServiceDatabase
-from app.database.chat_groups import ChatGroups
-from app.database.chat_messages import ChatMessages
+from .database.database_init import ChatServiceDatabase
+from .database.chat_groups import ChatGroups
+from .database.chat_messages import ChatMessages
 
-from app.services.chat_groups_services import ChatGroupsService
-from app.services.chat_messages_services import ChatMessagesService
+from .services.chat_groups_services import ChatGroupsService
+from .services.chat_messages_services import ChatMessagesService
 
-from app.events.register_chat_groups_events import register_chat_group_events
-from app.events.register_chat_messages_events import register_chat_message_events
+from .events.register_chat_groups_events import register_chat_group_events
+from .events.register_chat_messages_events import register_chat_message_events
+
+from .xmpp import initialize_xmpp_client
+
+#from config.xmpp_config import XmppConfig
 
 # Create a global SocketIO instance
 socketio = SocketIO(cors_allowed_origins="*")
@@ -42,8 +46,9 @@ def create_app():
     app.config['chat_groups_service'] = chat_groups_service
     app.config['chat_messages_service'] = chat_messages_service 
 
-    return app
-
-def register_events():
+    initialize_xmpp_client(XmppConfig.JID, XmppConfig.PASSWORD, XmppConfig.WEBSOCKET_URL)
+    
     register_chat_group_events(socketio)
     register_chat_message_events(socketio)
+
+    return app

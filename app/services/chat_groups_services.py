@@ -1,5 +1,5 @@
-from app.database.chat_groups import ChatGroups
-from app.utils.validators import validate_id, validate_group_name, validate_users
+from ..database.chat_groups import ChatGroups
+from ..utils.validators import validate_id, validate_group_name, validate_users
 
 class ChatGroupsService:
     def __init__(self, chat_groups_dal: ChatGroups):

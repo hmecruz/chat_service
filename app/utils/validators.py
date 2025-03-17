@@ -1,4 +1,4 @@
-from utils.constants import *
+from .constants import *
 
 def validate_id(id: str) -> str:
     """Validate chat ID with rules."""

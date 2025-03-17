@@ -1,6 +1,6 @@
 from flask import current_app
 from flask_socketio import SocketIO
-from app.events.chat_groups_events import ChatGroupsEvents
+from ..events.chat_groups_events import ChatGroupsEvents
 
 def register_chat_group_events(socketio: SocketIO):
     """

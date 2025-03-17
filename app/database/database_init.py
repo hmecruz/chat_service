@@ -1,7 +1,8 @@
 import logging
-from config.database_config import DatabaseConfig
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
+
+from config.database_config import DatabaseConfig
 
 logging.basicConfig(level=logging.ERROR)
 

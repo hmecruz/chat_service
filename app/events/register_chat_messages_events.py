@@ -1,6 +1,6 @@
 from flask import current_app
 from flask_socketio import SocketIO
-from app.events.chat_messages_events import ChatMessagesEvents
+from ..events.chat_messages_events import ChatMessagesEvents
 
 def register_chat_message_events(socketio: SocketIO):
     """

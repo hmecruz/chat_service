@@ -1,4 +1,4 @@
-from config.base_config import get_env_variable
+from .base_config import get_env_variable
 
 class XmppConfig:
     JID = get_env_variable("XMPP_JID", "user@example.com")

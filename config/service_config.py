@@ -1,4 +1,4 @@
-from config.base_config import get_env_variable
+from .base_config import get_env_variable
 
 class ServiceConfig:
     """Service-related configurations."""

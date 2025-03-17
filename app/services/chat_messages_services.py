@@ -1,5 +1,5 @@
-from utils.validators import validate_id, validate_message_content
-from app.database.chat_messages import ChatMessages
+from ..utils.validators import validate_id, validate_message_content
+from ..database.chat_messages import ChatMessages
 
 class ChatMessagesService:
     def __init__(self, chat_messages_dal: ChatMessages):
