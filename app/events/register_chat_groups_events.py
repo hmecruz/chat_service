@@ -1,3 +1,4 @@
+from flask import current_app
 from flask_socketio import SocketIO
 from app.events.chat_groups_events import ChatGroupsEvents
 
@@ -6,7 +7,9 @@ def register_chat_group_events(socketio: SocketIO):
     Registers all chat group-related event handlers to the SocketIO instance.
     """
 
-    chat_groups_events = ChatGroupsEvents()
+    xmpp_client = current_app.config['xmpp_client']
+
+    chat_groups_events = ChatGroupsEvents(xmpp_client)
 
     socketio.on_event('chat/create', chat_groups_events.handle_create_chat)
     socketio.on_event('chat/name/update', chat_groups_events.handle_update_chat_name)

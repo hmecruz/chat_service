@@ -1,13 +1,16 @@
 import logging
 from flask import current_app 
 from threading import Thread
-from app.xmpp.client import ChatClient
+from app.xmpp.chat_client import ChatClient
 from config.xmpp_config import XmppConfig
+from xmpp.chat_groups_xmpp import ChatGroupsXMPP
+from xmpp.chat_messages_xmpp import ChatMessagesXMPP
 
 def initialize_xmpp_client():
-    db = current_app.config['db']
-    xmpp_client = ChatClient(XmppConfig.JID, XmppConfig.PASSWORD, XmppConfig.WEBSOCKET_URL, db)
+    xmpp_client = ChatClient(XmppConfig.JID, XmppConfig.PASSWORD, XmppConfig.WEBSOCKET_URL)
     current_app.config['xmpp_client'] = xmpp_client
+    current_app.config['chat_groups_xmpp'] = ChatGroupsXMPP(xmpp_client)
+    current_app.config['chat_messages_xmpp'] = ChatMessagesXMPP(xmpp_client)
 
     def start_client():
         try:

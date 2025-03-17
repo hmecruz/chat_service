@@ -1,9 +1,15 @@
+import asyncio
+
 from flask import current_app
 from flask_socketio import emit
 
+from app.xmpp.chat_groups_xmpp import ChatGroupsXMPP
+
 class ChatGroupsEvents:
-    def __init__(self):
+    def __init__(self, xmpp_client):
         self.chat_groups_service = current_app.config['chat_groups_service']
+        self.xmpp_client = xmpp_client
+        self.chat_groups_xmpp = current_app.config['chat_groups_xmpp']
 
     # -----------------------------------------------------------------------------
     # Event: Create Chat Group
@@ -22,9 +28,23 @@ class ChatGroupsEvents:
         try:
             group_name = data.get('groupName')
             users = data.get('users')
+
+            if not group_name or not users:
+                raise ValueError("Invalid request: groupName and users are required fields")
+            if len(users) < 2:
+                raise ValueError("Invalid request: chat group must have at least 2 users")
+
+            domain = self.xmpp_client.boundjid.domain 
+            room_name = group_name.lower().replace(" ", "_")
+            room_jid = f"{room_name}@conference.{domain}"
+
+            # Since create_chat_group is asynchronous, run it in the event loop.
+            asyncio.run(self.chat_groups_xmpp.create_chat_group(room_jid, 'admin'))
+
             chat_group = self.chat_groups_service.create_chat_group(group_name, users)
             response = {
                 "chatId": str(chat_group["_id"]),
+                "groupJid": room_jid,
                 "groupName": chat_group["groupName"],
                 "users": chat_group["users"],
                 "createdAt": chat_group["createdAt"]

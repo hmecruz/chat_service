@@ -42,8 +42,8 @@ def create_app():
     app.config['chat_groups_service'] = chat_groups_service
     app.config['chat_messages_service'] = chat_messages_service 
 
-    # Register event handlers
+    return app
+
+def register_events():
     register_chat_group_events(socketio)
     register_chat_message_events(socketio)
-
-    return app
