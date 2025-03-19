@@ -7,9 +7,7 @@ def register_chat_message_events(socketio: SocketIO):
     Registers all chat message-related event handlers to the SocketIO instance.
     """
 
-    xmpp_client = current_app.config['xmpp_client']
-
-    chat_messages_events = ChatMessagesEvents(xmpp_client)
+    chat_messages_events = ChatMessagesEvents()
 
     socketio.on_event('chat/message', chat_messages_events.handle_send_message)
     socketio.on_event('chat/message/edit', chat_messages_events.handle_edit_message)

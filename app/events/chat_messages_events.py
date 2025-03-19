@@ -2,9 +2,8 @@ from flask import current_app
 from flask_socketio import emit
 
 class ChatMessagesEvents:
-    def __init__(self, xmpp_client):
+    def __init__(self):
         self.chat_messages_service = current_app.config['chat_messages_service']
-        self.xmpp_client = xmpp_client
 
     # -----------------------------------------------------------------------------
     # Event: Send Message

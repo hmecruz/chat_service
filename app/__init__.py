@@ -16,15 +16,10 @@ from .events.register_chat_messages_events import register_chat_message_events
 
 from .xmpp import initialize_xmpp_client
 
-from config.xmpp_config import XmppConfig
-
 # Create a global SocketIO instance
 socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app():
-
-    # Load environment variables from .env file 
-    #load_dotenv()
 
     app = Flask(__name__)
     # Load configuration from a config file or object
@@ -48,8 +43,13 @@ def create_app():
     app.config['chat_messages_service'] = chat_messages_service 
 
     with app.app_context():
-        initialize_xmpp_client(XmppConfig.JID, XmppConfig.PASSWORD, XmppConfig.WEBSOCKET_URL)
+        #initialize_xmpp_client(XmppConfig.JID, XmppConfig.PASSWORD, XmppConfig.WEBSOCKET_URL)
         register_chat_group_events(socketio)
         register_chat_message_events(socketio)
+
+    # Ensure DB connection is closed on shutdown
+    @app.teardown_appcontext
+    def close_db_connection(exception=None):
+        db.close_connection()
 
     return app

@@ -69,7 +69,7 @@ modules_enabled = {
 	-- HTTP modules
 		--"bosh"; -- Enable BOSH clients, aka "Jabber over HTTP"
 		--"http_openmetrics"; -- for exposing metrics to stats collectors
-		--"websocket"; -- XMPP over WebSockets
+		"websocket"; -- XMPP over WebSockets
 
 	-- Other specific functionality
 		--"announce"; -- Send announcement to all online users
@@ -83,6 +83,8 @@ modules_enabled = {
 		--"tombstones"; -- Prevent registration of deleted accounts
 		--"watchregistrations"; -- Alert admins of registrations
 		--"welcome"; -- Welcome users who register accounts
+
+		"muc"; -- Multi-user chat
 }
 
 -- These modules are auto-loaded, but should you want
@@ -253,9 +255,13 @@ pidfile = "/run/prosody/prosody.pid";
 -- all config files in /etc/prosody/conf.d/
 
 Include "conf.d/*.cfg.lua"
+
 VirtualHost "domain"
-c2s_require_encryption=false
-c2s_tls=false
+    c2s_require_encryption = false
+    c2s_tls = false
+
+Component "conference.localhost" "muc"
+        storage = "none"
 
 
 
