@@ -258,6 +258,7 @@ c2s_require_encryption=false
 c2s_tls=false
 
 
+
 ---------- End of the Prosody Configuration file ----------
 -- You usually **DO NOT** want to add settings here at the end, as they would
 -- only apply to the last defined VirtualHost or Component.
