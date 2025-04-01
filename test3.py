@@ -2,7 +2,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 # Change these variables to suit your setup:
-API_URL = "https://localhost:5443/api/register"
+API_URL = "https://localhost:5443/api/registered_users"
 ADMIN_JID = "admin@localhost"
 ADMIN_PASSWORD = "adminpassword"
 NEW_USER = "userTest"
@@ -16,7 +16,7 @@ payload = {
 }
 
 response = requests.post(API_URL, json=payload,
-                         #auth=HTTPBasicAuth(ADMIN_JID, ADMIN_PASSWORD),
+                         auth=HTTPBasicAuth(ADMIN_JID, ADMIN_PASSWORD),
                          verify=False)  # Set verify=True if using trusted certs
 
 if response.status_code == 200:

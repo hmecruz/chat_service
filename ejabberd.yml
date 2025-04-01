@@ -162,6 +162,7 @@ acl:
     ip:
       - 127.0.0.0/8
       - ::1/128
+      - "::FFFF:172.17.0.1/128"
   admin:
     user: admin@localhost
 
@@ -213,6 +214,7 @@ api_permissions:
     what:
       - status
       - connected_users_number
+      - register
 
 shaper:
   normal:
