@@ -1,30 +1,29 @@
 #!/bin/bash
 
-CONTAINER_NAME="prosody_xmpp"
-IMAGE_NAME="prosody_fedora"
+CONTAINER_NAME="ejabberd_xmpp"
+IMAGE_NAME="ejabberd/ecs"
 DEFAULT_PORT=5222  # Default client-to-server (c2s) port
 
 start_container() {
     PORT=${1:-$DEFAULT_PORT}  # Use provided port or default
 
-    echo "Starting Prosody XMPP server on port $PORT..."
+    echo "Starting ejabberd XMPP server on port $PORT..."
     if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
         echo "Container '$CONTAINER_NAME' is already running."
     else
         docker run -d --rm --name $CONTAINER_NAME \
-            -p $PORT:5222 \
-            -v /home/henrique/Desktop/chat_service/prosody.cfg.lua:/etc/prosody/prosody.cfg.lua \
+            -p $PORT:5222 -p 5269:5269 -p 5280:5280 -p 5443:5443\
+            -v /home/henrique/Desktop/chat_service/ejabberd.yml:/home/ejabberd/conf/ejabberd.yml \
             $IMAGE_NAME
         echo "Container '$CONTAINER_NAME' started on port $PORT."
     fi
 }
 
 stop_container() {
-    echo "Stopping Prosody XMPP server..."
+    echo "Stopping ejabberd XMPP server..."
     if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
         docker stop $CONTAINER_NAME
-        docker rm $CONTAINER_NAME
-        echo "Container '$CONTAINER_NAME' stopped and removed."
+        echo "Container '$CONTAINER_NAME' stopped."
     else
         echo "Container '$CONTAINER_NAME' is not running."
     fi
@@ -38,21 +37,10 @@ status_container() {
     fi
 }
 
-build_image() {
-    echo "Building Prosody XMPP Docker image..."
-    docker build -t $IMAGE_NAME .
-    echo "Docker image '$IMAGE_NAME' built successfully."
-}
-
-restart_container() {
-    stop_container
-    start_container "$1"  # Restart with the same port argument
-}
-
 enter_shell() {
     if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
         echo "Entering shell of container '$CONTAINER_NAME'..."
-        docker exec -it $CONTAINER_NAME /bin/bash
+        docker exec -it $CONTAINER_NAME /bin/sh
     else
         echo "Container '$CONTAINER_NAME' is not running. Start it first using: $0 start"
         exit 1
@@ -60,9 +48,6 @@ enter_shell() {
 }
 
 case "$1" in
-    build)
-        build_image
-        ;;
     start)
         start_container "$2"  # Pass custom port as argument
         ;;
@@ -71,9 +56,6 @@ case "$1" in
         ;;
     status)
         status_container
-        ;;
-    restart)
-        restart_container "$2"  # Pass custom port to restart
         ;;
     shell)
         enter_shell
