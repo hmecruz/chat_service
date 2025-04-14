@@ -1,51 +1,49 @@
 import logging
-import pexpect
 
-class XMPPUserManagement:
-    def __init__(self, container_name):
-        self.container_name = container_name
+import requests
+from requests.auth import HTTPBasicAuth
 
-    def add_user(self, username, domain, password):
-        """Create a user inside the Prosody container using docker exec and handle password input by reading output."""
-        try:
-            # Step 1: Start docker exec to run the prosodyctl adduser command in the container
-            add_user_command = f"docker exec -it {self.container_name} /bin/bash -c 'prosodyctl adduser {username}@{domain}'"
+from config.xmpp_config import XMPPConfig
 
-            # Start the command with pexpect (use '-i' for interactive mode, and shell=True)
-            child = pexpect.spawn(add_user_command, encoding='utf-8', shell=True)
 
-            # Step 2: Read the output and check for password prompts
-            output = child.read()  # Read the initial output
-            print(output)
+class UserManagement:
 
-            # Step 3: Look for the "Enter new password:" prompt in the output
-            while "Enter new password:" not in output:
-                output += child.read()  # Continue reading output
+    def __init__(self):
+        pass
 
-            logging.info("Password prompt detected.")
-            child.sendline(password)  # Send the password
+    def register_user(username: str, password: str):
+        """Register a new user via HTTP API."""
+        endpoint = f"{XMPPConfig.EJABBERD_API_URL}/register"
+        payload = {
+            "user": username, 
+            "host": XMPPConfig.VHOST, 
+            "password": password
+            }
+        response = requests.post(endpoint, json=payload,
+                                auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
+                                verify=False)
+        if response.status_code == 200:
+            logging.info(f"✅ Registered user {username}@{XMPPConfig.VHOST}")
+        else:
+            logging.error(f"❌ Failed to register user {username}@{XMPPConfig.VHOST}: {response.text}")
 
-            # Step 4: Now wait for the "Retype new password:" prompt
-            output = child.read()  # Read the next part of the output
-            while "Retype new password:" not in output:
-                output += child.read()  # Continue reading output
 
-            logging.info("Retype password prompt detected.")
-            child.sendline(password)  # Confirm the password
+    def unregister_user(self, username: str):
+        """Unregister (delete) an XMPP user from ejabberd via HTTP API."""
+        endpoint = f"{XMPPConfig.EJABBERD_API_URL}/unregister"
+        payload = {
+            "user": username,
+            "host": XMPPConfig.VHOST
+        }
 
-            # Step 5: Wait for the command to complete (successful completion)
-            output = child.read()  # Read until end of process
-            logging.info(f"Process output: {output}")
+        response = requests.post(
+            endpoint,
+            json=payload,
+            auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
+            verify=False
+        )
 
-            child.close()
-
-            logging.info(f"User {username}@{domain} created successfully.")
-        except pexpect.exceptions.ExceptionPexpect as e:
-            logging.error(f"Failed to create user {username}@{domain}: {e}")
-        except Exception as e:
-            logging.error(f"Unexpected error: {e}")
-
-# Usage
-xmpp_user_management = XMPPUserManagement(container_name="prosody_xmpp")
-xmpp_user_management.add_user("userA", "domain", "passwordA")
-xmpp_user_management.add_user("userB", "domain", "passwordB")
+        if response.status_code == 200:
+            logging.info(f"🗑️ Unregistered user {username}@{XMPPConfig.VHOST}")
+        else:
+            logging.error(f"❌ Failed to unregister user {username}@{XMPPConfig.VHOST}: {response.text}")
