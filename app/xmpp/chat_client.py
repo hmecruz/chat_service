@@ -11,7 +11,7 @@ class XMPPClient(slixmpp.ClientXMPP):
         super().__init__(jid, password)
 
         if not use_certificate:
-            self.ssl_context = ssl.create_default_context() # TODO Check if correct
+            self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT) # TODO Check if correct
             self.ssl_context.check_hostname=False
             self.ssl_context.verify_mode=ssl.CERT_NONE
 
@@ -24,7 +24,7 @@ class XMPPClient(slixmpp.ClientXMPP):
         self.add_event_handler("session_start", self.session_start)   
         
 
-    async def session_start(self):
+    async def session_start(self, event):
         """Start the XMPP session and establish connections."""
         self.send_presence()
         await self.get_roster()
@@ -35,14 +35,18 @@ class XMPPClient(slixmpp.ClientXMPP):
         return self.is_connected()
 
     
-    def connect_to_server(self, host: str, port: int, use_ssl: bool, force_starttls: bool):
+    def connect_to_server(self, host: str, port: int, use_ssl: bool, force_starttls: bool) -> bool:
         """Connect to the XMPP server with given parameters."""
         try:
-            return self.connect(address=(host, port), use_ssl=use_ssl, force_starttls=force_starttls)
-        except XMPPError as e:
+            connected = self.connect(address=(host, port), use_ssl=use_ssl, force_starttls=force_starttls)
+            if not connected:
+                logging.error("❌ Connection failed: Unknown reason")
+            return connected
+        except Exception as e:
             logging.error(f"❌ Connection failed: {e}")
-
-
+            return False
+    
     def disconnect_from_server(self):
         """Disconnect the XMPP client."""
         self.disconnect()
+        

@@ -14,7 +14,7 @@ from .services.chat_messages_services import ChatMessagesService
 from .events.register_chat_groups_events import register_chat_group_events
 from .events.register_chat_messages_events import register_chat_message_events
 
-from .xmpp import initialize_xmpp_client
+from .xmpp.client_registry import XMPPClientRegistry
 
 # Create a global SocketIO instance
 socketio = SocketIO(cors_allowed_origins="*")
@@ -41,6 +41,11 @@ def create_app():
 
     app.config['chat_groups_service'] = chat_groups_service
     app.config['chat_messages_service'] = chat_messages_service 
+
+    
+    # Instantiate the XMPPClients registry
+    xmpp_clients = XMPPClientRegistry()
+    app.config['xmpp_clients'] = xmpp_clients
 
     with app.app_context():
         #initialize_xmpp_client(XmppConfig.JID, XmppConfig.PASSWORD, XmppConfig.WEBSOCKET_URL)

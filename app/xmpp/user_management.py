@@ -7,10 +7,10 @@ from config.xmpp_config import XMPPConfig
 
 
 class UserManagement:
-
     def __init__(self):
         pass
 
+    @staticmethod
     def register_user(username: str, password: str):
         """Register a new user via HTTP API."""
         endpoint = f"{XMPPConfig.EJABBERD_API_URL}/register"
@@ -28,7 +28,8 @@ class UserManagement:
             logging.error(f"❌ Failed to register user {username}@{XMPPConfig.VHOST}: {response.text}")
 
 
-    def unregister_user(self, username: str):
+    @staticmethod
+    def unregister_user(username: str):
         """Unregister (delete) an XMPP user from ejabberd via HTTP API."""
         endpoint = f"{XMPPConfig.EJABBERD_API_URL}/unregister"
         payload = {

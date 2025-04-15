@@ -11,7 +11,6 @@ class ChatGroupsService:
         validate_users(users)
 
         chat_id = self.chat_groups_dal.create_chat_group(group_name, users)
-
         if not chat_id:
             raise ValueError("Chat group not created")
 
@@ -31,8 +30,8 @@ class ChatGroupsService:
         """Validates and updates a chat group's name."""
         validate_id(chat_id)
         validate_group_name(group_name)
-        self.chat_groups_dal.update_chat_group_name(chat_id, group_name)
 
+        self.chat_groups_dal.update_chat_group_name(chat_id, group_name)
         chat_group = self.chat_groups_dal.get_chat_group(chat_id)
             
         if not chat_group:
@@ -50,8 +49,7 @@ class ChatGroupsService:
         
         if deleted_count == 1:
             return True # Successfully deleted
-        else:
-            raise ValueError(f"Chat group with ID {chat_id} not found or already deleted")
+        raise ValueError(f"Chat group with ID {chat_id} not found or already deleted")
 
 
     def add_users_to_chat(self, chat_id: str, user_ids: list[str]):
@@ -60,7 +58,6 @@ class ChatGroupsService:
         validate_users(user_ids)
 
         self.chat_groups_dal.add_users_to_chat(chat_id, user_ids)
-
         chat_group = self.chat_groups_dal.get_chat_group(chat_id)
 
         if not chat_group:
@@ -76,8 +73,8 @@ class ChatGroupsService:
         """Removes users from a chat group."""
         validate_id(chat_id)
         validate_users(user_ids)
-        self.chat_groups_dal.remove_users_from_chat(chat_id, user_ids)
 
+        self.chat_groups_dal.remove_users_from_chat(chat_id, user_ids)
         chat_group = self.chat_groups_dal.get_chat_group(chat_id)
 
         if not chat_group:

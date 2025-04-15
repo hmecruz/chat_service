@@ -1,5 +1,7 @@
+from typing import Optional
 from bson.objectid import ObjectId
 from datetime import datetime, UTC
+
 from .database_init import ChatServiceDatabase
 
 class ChatGroups:
@@ -15,10 +17,10 @@ class ChatGroups:
             "createdAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)
         }
         result = self.chat_groups.insert_one(chat_group)
-        return result.inserted_id
+        return {"_id": str(result.inserted_id)}
        
 
-    def get_chat_group(self, chat_id: str) -> dict | None:
+    def get_chat_group(self, chat_id: str) -> Optional[dict]:
         """Retrieve a chat group by ID."""
         return self.chat_groups.find_one({"_id": ObjectId(chat_id)})
 
@@ -47,5 +49,5 @@ class ChatGroups:
 
     def get_chat_groups_for_user(self, user_id: str, skip: int, limit: int) -> list:
         """Retrieve paginated chat groups for a user."""
-        cursor = self.chat_groups.find({"users": user_id}).skip(skip).limit(limit)
+        cursor = self.chat_groups.find({"users": user_id}).sort("createdAt", -1).skip(skip).limit(limit)
         return list(cursor)

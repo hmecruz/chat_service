@@ -14,15 +14,14 @@ class ChatMessagesService:
         validate_message_content(content)
         
         message_id = self.chat_messages_dal.insert_message(chat_id, sender_id, content)
-
         if not message_id:
             raise RuntimeError("Failed to store message")
         
         message = self.chat_messages_dal.fetch_message(message_id)
-
         if not message:
             raise RuntimeError("Failed to retrieve stored message")
-        if message["chat_id"] != chat_id:
+        
+        if str(message["chat_id"]) != chat_id:
             raise RuntimeError("Chat ID mismatch in stored message")
         if message["sender_id"] != sender_id:
             raise RuntimeError("Sender ID mismatch in stored message")
@@ -37,9 +36,9 @@ class ChatMessagesService:
         validate_id(message_id)
 
         message = self.chat_messages_dal.fetch_message(message_id)
-
         if not message:
             raise ValueError(f"Message with ID {message_id} not found")
+        
         if str(message["_id"]) != message_id:
             raise RuntimeError("Message ID mismatch in retrieved message")
         
@@ -63,7 +62,6 @@ class ChatMessagesService:
         validate_message_content(new_content)
         
         updated = self.chat_messages_dal.update_message(message_id, new_content)
-
         if not updated:
             raise RuntimeError("Failed to update message")
         
@@ -71,6 +69,7 @@ class ChatMessagesService:
         
         if not update_message:
             raise RuntimeError("Failed to retrieve updated message")
+        
         if str(update_message["_id"]) != message_id:
             raise RuntimeError("Message ID mismatch in updated")
         if update_message["chat_id"] != chat_id:
@@ -93,8 +92,9 @@ class ChatMessagesService:
         if not deleted:
             raise ValueError(f"Message with ID {message_id} not found or already deleted")
         
-        try:
-            self.chat_messages_dal.fetch_message(message_id)
-            raise RuntimeError("Message not deleted")
-        except:
-            return True
+        # Confirm deletion
+        message = self.chat_messages_dal.fetch_message(message_id)
+        if message is not None:
+            raise RuntimeError("Message still exists after deletion")
+
+        return True

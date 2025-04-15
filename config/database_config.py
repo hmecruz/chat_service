@@ -19,5 +19,5 @@ class DatabaseConfig:
             ("sentAt", -1),  # Sort messages by time (newest first)
             ("content", "text"),  # Full-text search on message content (case-insensitive)
             ("editedAt", -1),  # Sort messages by time (descending order)
-        ]   
+        ],
     }

@@ -20,7 +20,7 @@ class ChatMessages:
             "sentAt": datetime.now(UTC).replace(tzinfo=None, microsecond=0)  # Truncate microseconds
         }
         result = self.chat_messages.insert_one(message_data)
-        return result.inserted_id
+        return {"messageId": str(result.inserted_id)}
         
         
     def fetch_message(self, message_id: str) -> dict | None:
@@ -28,9 +28,9 @@ class ChatMessages:
         return self.chat_messages.find_one({"_id": ObjectId(message_id)})
 
 
-    def fetch_messages(self, chat_id: str, skip: int, limit: int) -> list:
+    def fetch_messages(self, chat_id: str, skip: int, limit: int, sort_by="sentAt", sort_order=-1) -> list:
         """Retrieves paginated messages for a chat group."""
-        cursor = self.chat_messages.find({"chat_id": ObjectId(chat_id)}).sort("sentAt", -1).skip(skip).limit(limit)
+        cursor = self.chat_messages.find({"chat_id": ObjectId(chat_id)}).sort(sort_by, sort_order).skip(skip).limit(limit)
         return list(cursor)
     
 
