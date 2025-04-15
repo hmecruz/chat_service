@@ -93,8 +93,8 @@ class UserManagementXMPP:
     def ensure_users_register(users: list[str], default_password: str = "password") -> None:
         """Ensure users are registered in the XMPP server, register them if missing."""
         
-        registered_usernames = UserManagementXMPP.get_registered_users()
-        
+        registered_usernames = [user.get("username") for user in UserManagementXMPP.get_registered_users()]
+
         missing_users = [
             (user, default_password) for user in users # TODO Replace with a secure password generator
             if user not in registered_usernames

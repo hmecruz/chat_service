@@ -10,7 +10,6 @@ class DatabaseConfig:
     COLLECTIONS = {
         "chat_groups": [
             ("groupName", "text"),  # Full-text search on group names (case-insensitive)
-            ("users", 1),  # Index on 'users' for fast lookup (ascending order)
             ("createdAt", -1)  # Sort by creation time (descending order)
             ],
         "chat_messages": [
