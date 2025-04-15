@@ -1,6 +1,8 @@
 import logging
-from slixmpp.exceptions import XMPPError
+import requests
+from requests.auth import HTTPBasicAuth
 
+from config.xmpp_config import XMPPConfig
 
 class ChatMessagesXMPP:
     def __init__(self):
@@ -10,34 +12,42 @@ class ChatMessagesXMPP:
         """Handles events from Flask-SocketIO related to chat messages."""
         pass
 
-    def send_message(self, xmpp_client, chat_id: str, message: str):
-        """Send a message to an XMPP chat room (MUC)."""
-        if not chat_id or not message:
-            logging.error("❌ Cannot send message: chat_id or message is empty")
-            return False
+    @staticmethod
+    def send_message(user_id: str, to_id: str, message_type: str, subject: str, body: str) -> bool:
+        """
+        Send a message to a user or chat room via ejabberd HTTP API.
 
-        try:
-            xmpp_client.send_message(mto=chat_id, mbody=message, mtype='groupchat')
-            logging.info(f"📤 Sent message to {chat_id}: {message}")
-            return True
-        except XMPPError as e:
-            logging.error(f"❌ Failed to send message to {chat_id}: {e}")
-            return False
-        
-    def edit_message(self, chat_id: str, message_id: str, new_content: str):
-        """Edit a previously sent message (requires XEP-0424 support)."""
-        logging.warning("✏️ Editing messages requires XEP-0424 and message origin-id support.")
-        # TODO: Implement message editing using XEP-0424 (Message Reactions and Edits)
-        pass
+        :param user_id: JID of the sender (bare or full JID)
+        :param to_id: JID of the receiver - person or group
+        :param message_type: Type of message (e.g., "chat", "groupchat", etc.)
+        :param subject: Subject of the message
+        :param body: Body of the message
+        :return: True if message was sent successfully, False otherwise
+        """
+        endpoint = f"{XMPPConfig.EJABBERD_API_URL}/send_message"
+        payload = {
+            "type": message_type, # e.g., "chat" or "groupchat"
+            "from": f"{user_id}@{XMPPConfig.VHOST}",
+            "to": f"{to_id}@{XMPPConfig.MUC_SERVICE}",
+            "subject": subject,
+            "body": body
+        }
 
-    def delete_message(self, chat_id: str, message_id: str):
-        """Delete a message by ID (requires XEP-0425 or app-side handling)."""
-        logging.warning("🗑️ Deleting messages requires XEP-0425 or local tracking of message history.")
-        # TODO: Implement deletion logic via retraction (XEP-0425) or custom app-side logic
-        pass
+        response = requests.post(
+            endpoint,
+            json=payload,
+            auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
+            verify=False
+        )
 
-    def get_message_by_id(self, message_id: str):
-        """Fetch a message by ID (typically requires MAM / XEP-0313)."""
-        logging.warning("🔎 Getting message by ID requires XEP-0313 (MAM).")
-        # TODO: Implement via MAM (Message Archive Management)
-        pass
+        if response.status_code == 200:
+            result = response.json()
+            if result == 0:
+                logging.info(f"📤 Sent message from {user_id} to {to_id}: {body}")
+                return True
+            else:
+                logging.error(f"❌ Failed to send message from {user_id} to {to_id}: {result}")
+                response.raise_for_status()
+        else:
+            logging.error(f"❌ Failed to send message from {user_id} to {to_id}: {response.text}")
+            response.raise_for_status()
