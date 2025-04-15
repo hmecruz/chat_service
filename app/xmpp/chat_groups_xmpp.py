@@ -2,7 +2,6 @@ import logging
 import requests
 from requests.auth import HTTPBasicAuth
 
-from slixmpp.exceptions import XMPPError
 from config.xmpp_config import XMPPConfig
 
 
@@ -51,25 +50,24 @@ class ChatGroupsXMPP:
             "options": options
         }
 
-        try:
-            response = requests.post(
-                endpoint,
-                json=payload,
-                auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
-                verify=False
-            )
-            response.raise_for_status()
+        response = requests.post(
+            endpoint,
+            json=payload,
+            auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
+            verify=False
+        )
+
+        if response.status_code == 200:
             result = response.json()
             if result == 0:
                 logging.info(f"✅ Room {room}@{XMPPConfig.MUC_SERVICE} created with options successfully.")
                 return True
             else:
-                logging.warning(f"⚠️ Room {room} creation returned non-zero result: {result}")
-                return False
-
-        except requests.RequestException as e:
-            logging.error(f"❌ Failed to create room {room} with options: {e}")
-            return False
+                logging.error(f"❌ Failed to create room {room}@{XMPPConfig.MUC_SERVICE}: {result}")
+                raise requests.exceptions.HTTPError(f"Room creation failed with result: {result}")
+        else:
+            logging.error(f"❌ Failed to create room {room}@{XMPPConfig.MUC_SERVICE}: {response.text}")
+            response.raise_for_status()
 
     @staticmethod
     def delete_chat_group(chat_id: str):
@@ -79,19 +77,21 @@ class ChatGroupsXMPP:
             "room": chat_id,
             "service": XMPPConfig.MUC_SERVICE
         }
-        try:
-            response = requests.post(
-                endpoint,
-                json=payload,
-                auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
-                verify=False
-            )
-            response.raise_for_status()
+
+        response = requests.post(
+            endpoint,
+            json=payload,
+            auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
+            verify=False
+        )
+
+        # Check if the response status code is 200, otherwise log and raise exception
+        if response.status_code == 200:
             logging.info(f"🗑️ Room {chat_id}@{XMPPConfig.MUC_SERVICE} destroyed successfully.")
             return True
-        except requests.RequestException as e:
-            logging.error(f"❌ Failed to destroy room {chat_id}@{XMPPConfig.MUC_SERVICE}: {e}")
-            return False
+        else:
+            logging.error(f"❌ Failed to destroy room {chat_id}@{XMPPConfig.MUC_SERVICE}: {response.text}")
+            response.raise_for_status()
 
     @staticmethod
     def get_user_rooms(username: str) -> list[str]:
@@ -101,20 +101,22 @@ class ChatGroupsXMPP:
             "user": username,
             "host": XMPPConfig.VHOST
         }
-        try:
-            response = requests.post(
-                endpoint,
-                json=payload,
-                auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
-                verify=False
-            )
-            response.raise_for_status()
+
+        response = requests.post(
+            endpoint,
+            json=payload,
+            auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
+            verify=False
+        )
+
+        # Check if the response status code is 200, otherwise log and raise exception
+        if response.status_code == 200:
             rooms = response.json()
             logging.info(f"✅ User {username}@{XMPPConfig.VHOST} is in rooms: {rooms}")
             return rooms
-        except requests.RequestException as e:
-            logging.error(f"❌ Failed to get user rooms for {username}: {e}")
-            return []
+        else:
+            logging.error(f"❌ Failed to get rooms for user {username}@{XMPPConfig.VHOST}: {response.text}")
+            response.raise_for_status()
 
     @staticmethod
     def get_room_occupants(room: str) -> list[dict]:
@@ -124,21 +126,24 @@ class ChatGroupsXMPP:
             "room": room,
             "service": XMPPConfig.MUC_SERVICE
         }
-        try:
-            response = requests.post(
-                endpoint,
-                json=payload,
-                auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
-                verify=False
-            )
-            response.raise_for_status()
+
+        response = requests.post(
+            endpoint,
+            json=payload,
+            auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
+            verify=False
+        )
+
+        # Check if the response status code is 200, otherwise log and raise exception
+        if response.status_code == 200:
             occupants = response.json()
             logging.info(f"✅ Occupants in room {room}@{XMPPConfig.MUC_SERVICE}: {occupants}")
             return occupants
-        except requests.RequestException as e:
-            logging.error(f"❌ Failed to get occupants of room {room}: {e}")
-            return []
-        
+        else:
+            logging.error(f"❌ Failed to get occupants for room {room}@{XMPPConfig.MUC_SERVICE}: {response.text}")
+            response.raise_for_status()
+
+    @staticmethod
     def set_room_affiliation(room: str, user: str, affiliation: str) -> bool:
         """Set a user's affiliation in a MUC room."""
         endpoint = f"{XMPPConfig.EJABBERD_API_URL}/set_room_affiliation"
@@ -149,24 +154,25 @@ class ChatGroupsXMPP:
             "host": XMPPConfig.VHOST,
             "affiliation": affiliation
         }
-        try:
-            response = requests.post(
-                endpoint,
-                json=payload,
-                auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
-                verify=False
-            )
-            response.raise_for_status()
+
+        response = requests.post(
+            endpoint,
+            json=payload,
+            auth=HTTPBasicAuth(XMPPConfig.ADMIN_USER, XMPPConfig.ADMIN_PASSWORD),
+            verify=False
+        )
+
+        if response.status_code == 200:
             result = response.json()
             if result == 0:
                 logging.info(f"✅ Set affiliation '{affiliation}' for user {user}@{XMPPConfig.VHOST} in room {room}.")
                 return True
             else:
-                logging.warning(f"⚠️ Failed to set affiliation '{affiliation}' for user {user}@{XMPPConfig.VHOST} in room {room}. Response: {result}")
-                return False
-        except requests.RequestException as e:
-            logging.error(f"❌ Error setting affiliation '{affiliation}' for user {user}@{XMPPConfig.VHOST} in room {room}: {e}")
-            return False
+                logging.error(f"❌ Failed to set affiliation '{affiliation}' for user {user}@{XMPPConfig.VHOST} in room {room}: {result}")
+                raise requests.exceptions.HTTPError(f"Affiliation setting failed with result: {result}")
+        else:
+            logging.error(f"❌ Failed to set affiliation '{affiliation}' for user {user}@{XMPPConfig.VHOST} in room {room}: {response.text}")
+            response.raise_for_status()
 
     @staticmethod
     def add_user_to_room(room: str, user: str) -> bool:
