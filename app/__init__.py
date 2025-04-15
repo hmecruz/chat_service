@@ -14,7 +14,6 @@ from .services.chat_messages_services import ChatMessagesService
 from .events.register_chat_groups_events import register_chat_group_events
 from .events.register_chat_messages_events import register_chat_message_events
 
-from .xmpp.client_registry_xmpp import ClientRegistryXMPP
 from .xmpp.user_management_xmpp import UserManagementXMPP
 
 # Create a global SocketIO instance
@@ -33,9 +32,8 @@ def create_app():
     db = ChatServiceDatabase()
     app.config['db'] = db
 
-    # Initialize XMPP client registry
-    xmpp_client_registry = ClientRegistryXMPP()
-    xmpp_user_management = UserManagementXMPP(xmpp_client_registry)
+    # Initialize XMPP User Management
+    xmpp_user_management = UserManagementXMPP()
 
     # Instantiate ChatGroupsService
     chat_groups_dal = ChatGroups(db)

@@ -4,7 +4,7 @@ from .chat_client import XMPPClient
 from config.xmpp_config import *
 
 class ClientRegistryXMPP:
-    """In-memory registry to track active Slixmpp clients by user ID."""
+    """In-memory registry to track XMPPClient objects by user ID."""
 
     def __init__(self):
         self._clients: Dict[str, Any] = {}

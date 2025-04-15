@@ -7,9 +7,9 @@ from config.xmpp_config import XMPPConfig
 
 
 class UserManagementXMPP:
-    def __init__(self, xmpp_registry):
-        self.xmpp_registry = xmpp_registry
-
+    def __init__(self):
+        pass
+        
     @staticmethod
     def register_user(username: str, password: str):
         """Register a new user via HTTP API."""
@@ -90,10 +90,3 @@ class UserManagementXMPP:
         if missing_users:
             self.register_users(missing_users)
 
-        # XMPP registry
-        missing_users = self.xmpp_registry.missing_users(users)
-        missing_users = [
-            (user, password) for user, password in zip(users, "password") # Replace with actual password generation logic 
-            if user in missing_users
-        ]
-        self.xmpp_registry.register_users(missing_users)

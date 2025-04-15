@@ -585,18 +585,9 @@ components:
                 groupName:
                   type: string
                   description: Name of the chat group.
-                lastMessage:
-                  type: string
-                  description: Excerpt of the last message.
-                lastUpdated:
-                  type: string
-                  format: date-time
-                  description: Timestamp of the last update.
               required:
                 - chatId
                 - groupName
-                - lastMessage
-                - lastUpdated
         required:
           - userId
           - page
@@ -611,5 +602,3 @@ components:
           chats:
             - chatId: "chat123"
               groupName: "Team Chat"
-              lastMessage: "Hello!"
-              lastUpdated: "2025-03-03T12:20:00Z"

@@ -1,21 +1,27 @@
 from flask import current_app
 from ..database.chat_groups import ChatGroups
 from ..xmpp.user_management_xmpp import UserManagementXMPP
+from ..xmpp.chat_groups_xmpp import ChatGroupsXMPP
 from ..utils.validators import validate_id, validate_group_name, validate_users
 
 class ChatGroupsService:
     def __init__(self, chat_groups_dal: ChatGroups, xmpp_user_management: UserManagementXMPP):
         self.chat_groups_dal = chat_groups_dal
         self.xmpp_user_management = xmpp_user_management
+        self.chat_groups_xmpp = ChatGroupsXMPP()
 
     def create_chat_group(self, group_name: str, users: list[str]) -> dict:
         """Creates a new chat group after validation."""
+
+        # Validate inputs
         validate_group_name(group_name)
         validate_users(users)
-
-        # Ensure users are registered and exist on the XMPP server
-        self.xmpp_user_management.ensure_users_register(users)
-
+        
+        # Create chat group in XMPP
+        self.xmpp_user_management.register_users(users)
+        self.chat_groups_xmpp.create_chat_group(group_name, users)
+    
+        # Create chat group in database
         chat_id = self.chat_groups_dal.create_chat_group(group_name, users)
         if not chat_id:
             raise ValueError("Chat group not created")
@@ -51,6 +57,15 @@ class ChatGroupsService:
     def delete_chat_group(self, chat_id: str) -> bool:
         """Deletes a chat group."""
         validate_id(chat_id)
+
+        # Delete chat group in XMPP
+        self.chat_groups_xmpp.delete_chat_group(chat_id)
+
+        # Delete chat group in database
+        chat_group = self.chat_groups_dal.get_chat_group(chat_id)
+        if not chat_group:
+            raise ValueError(f"Chat group with ID {chat_id} not found")
+        
         deleted_count = self.chat_groups_dal.delete_chat_group(chat_id)
         
         if deleted_count == 1:
@@ -63,6 +78,10 @@ class ChatGroupsService:
         validate_id(chat_id)
         validate_users(user_ids)
 
+        # Add users to chat group in XMPP
+        self.chat_groups_xmpp.add_users_to_room(chat_id, user_ids)
+
+        # Add users to chat group in database
         self.chat_groups_dal.add_users_to_chat(chat_id, user_ids)
         chat_group = self.chat_groups_dal.get_chat_group(chat_id)
 
@@ -80,6 +99,10 @@ class ChatGroupsService:
         validate_id(chat_id)
         validate_users(user_ids)
 
+        # Remove users from chat group in XMPP
+        self.chat_groups_xmpp.remove_users_from_room(chat_id, user_ids)
+
+        # Remove users from chat group in database
         self.chat_groups_dal.remove_users_from_chat(chat_id, user_ids)
         chat_group = self.chat_groups_dal.get_chat_group(chat_id)
 
