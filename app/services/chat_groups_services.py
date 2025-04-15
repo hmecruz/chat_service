@@ -18,7 +18,7 @@ class ChatGroupsService:
         validate_users(users)
         
         # Create chat group in XMPP
-        self.xmpp_user_management.register_users(users)
+        self.xmpp_user_management.ensure_users_register(users)
         self.chat_groups_xmpp.create_chat_group(group_name, users)
     
         # Create chat group in database
@@ -79,6 +79,7 @@ class ChatGroupsService:
         validate_users(user_ids)
 
         # Add users to chat group in XMPP
+        self.xmpp_user_management.ensure_users_register(user_ids)
         self.chat_groups_xmpp.add_users_to_room(chat_id, user_ids)
 
         # Add users to chat group in database
@@ -118,6 +119,8 @@ class ChatGroupsService:
         """Validates and fetches paginated chat groups."""
         if page < 1 or limit < 1:
             raise ValueError("Page and limit must be greater than zero")
+
+        validate_id(user_id)
 
         skip = (page - 1) * limit
         return self.chat_groups_dal.get_chat_groups_for_user(user_id, skip, limit)
