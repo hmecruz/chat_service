@@ -1,18 +1,31 @@
 from ..utils.validators import validate_id, validate_message_content
+from ..xmpp.chat_messages_xmpp import ChatMessagesXMPP
 from ..database.chat_messages import ChatMessages
 
 class ChatMessagesService:
     def __init__(self, chat_messages_dal: ChatMessages):
         """Business logic layer for chat messages."""
         self.chat_messages_dal = chat_messages_dal 
+        self.chat_messages_xmpp = ChatMessagesXMPP()
 
 
-    def store_message(self, chat_id: str, sender_id: str, content: str) -> dict:
+    def send_message(self, chat_id: str, sender_id: str, content: str) -> dict:
         """Validates and stores a new chat message."""
         validate_id(chat_id)
         validate_id(sender_id)
         validate_message_content(content)
         
+        # Send Message using XMPP
+        sucess = self.chat_messages_xmpp.send_message(
+            user_id=sender_id,
+            to_id=chat_id,
+            message_type="groupchat",
+            subject="",
+            body=content
+        )
+        if not sucess:
+            raise RuntimeError("Failed to send message via XMPP")
+
         message_id = self.chat_messages_dal.insert_message(chat_id, sender_id, content)
         if not message_id:
             raise RuntimeError("Failed to store message")

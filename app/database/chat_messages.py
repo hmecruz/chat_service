@@ -23,7 +23,7 @@ class ChatMessages:
         """Retrieves a message by ID."""
         return self.chat_messages.find_one({"_id": message_id})
 
-    def fetch_messages(self, chat_id: str, skip: int, limit: int, sort_by="sentAt", sort_order=-1) -> list:
+    def fetch_messages(self, chat_id: str, skip: int, limit: int, sort_by="sentAt", sort_order=-1) -> list | None:
         """Retrieves paginated messages for a chat group."""
         cursor = self.chat_messages.find({"chat_id": chat_id}).sort(sort_by, sort_order).skip(skip).limit(limit)
         return list(cursor)

@@ -26,7 +26,7 @@ class ChatMessagesEvents:
             content = data.get('content')
             
             # Store the message using the service layer
-            new_message = self.chat_messages_service.store_message(chat_id, sender_id, content)
+            new_message = self.chat_messages_service.send_message(chat_id, sender_id, content)
             
             # Prepare the event payload according to SendMessageEvent
             response = {
@@ -35,7 +35,7 @@ class ChatMessagesEvents:
                 "limit": 1,
                 "total": 1,
                 "messages": [{
-                    "messageId": str(new_message["_id"]),
+                    "messageId": new_message["_id"],
                     "senderId": new_message["sender_id"],
                     "content": new_message["content"],
                     "sentAt": new_message["sentAt"]

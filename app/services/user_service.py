@@ -22,3 +22,13 @@ class UserService:
                 {"chat_id": "chat2", "name": "Chat Group 2"}
             ]
         }
+    
+    def get_chat_groups_for_user(self, user_id: str, page: int = 1, limit: int = 5) -> list:
+        """Validates and fetches paginated chat groups."""
+        if page < 1 or limit < 1:
+            raise ValueError("Page and limit must be greater than zero")
+
+        validate_id(user_id)
+
+        skip = (page - 1) * limit
+        return self.chat_groups_dal.get_chat_groups_for_user(user_id, skip, limit)
