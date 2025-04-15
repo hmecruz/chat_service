@@ -1,14 +1,20 @@
+from flask import current_app
 from ..database.chat_groups import ChatGroups
+from ..xmpp.user_management_xmpp import UserManagementXMPP
 from ..utils.validators import validate_id, validate_group_name, validate_users
 
 class ChatGroupsService:
-    def __init__(self, chat_groups_dal: ChatGroups):
+    def __init__(self, chat_groups_dal: ChatGroups, xmpp_user_management: UserManagementXMPP):
         self.chat_groups_dal = chat_groups_dal
+        self.xmpp_user_management = xmpp_user_management
 
     def create_chat_group(self, group_name: str, users: list[str]) -> dict:
         """Creates a new chat group after validation."""
         validate_group_name(group_name)
         validate_users(users)
+
+        # Ensure users are registered and exist on the XMPP server
+        self.xmpp_user_management.ensure_users_register(users)
 
         chat_id = self.chat_groups_dal.create_chat_group(group_name, users)
         if not chat_id:

@@ -1,14 +1,10 @@
 from flask import current_app
 from flask_socketio import emit
 
-from ..xmpp import chat_groups_xmpp
-from ..xmpp import user_management
 
 class ChatGroupsEvents:
 	def __init__(self):
 		self.chat_groups_service = current_app.config['chat_groups_service']
-		self.chat_groups_xmpp = chat_groups_xmpp.ChatGroupsXMPP()
-		self.user_management = user_management.UserManagement()
 
 	# -----------------------------------------------------------------------------
 	# Event: Create Chat Group
@@ -36,9 +32,6 @@ class ChatGroupsEvents:
 			chat_group = self.chat_groups_service.create_chat_group(group_name, users)
 			chat_id = str(chat_group["_id"])
 			
-			# XMPP: Create MUC room
-			self.chat_groups_xmpp.create_chat_group(chat_id)
-
 			response = {
 				"chatId": chat_id,
 				"groupName": chat_group["groupName"],
@@ -95,8 +88,6 @@ class ChatGroupsEvents:
 			chat_id = data.get('chatId')
 			result = self.chat_groups_service.delete_chat_group(chat_id)
 
-			self.chat_groups_xmpp.delete_chat_group(chat_id)
-
 			response = {
 				"chatId": chat_id,
 				"deleted": result
@@ -124,9 +115,6 @@ class ChatGroupsEvents:
 			user_ids = data.get('userIds')
 			added_users = self.chat_groups_service.add_users_to_chat(chat_id, user_ids)
 			
-			for username in user_ids:
-				self.user_management.register_user(username, "password") # TODO Actually use a secure password
-
 			response = {
 				"chatId": chat_id,
 				"userIds": added_users
