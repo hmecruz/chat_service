@@ -1,0 +1,10 @@
+venv/
+.env
+__pycache__/
+.pytest_cache/
+*.log
+test.py
+test2.py
+test3.py
+database.txt
+prosody.cfg.lua

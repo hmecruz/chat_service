@@ -1,0 +1,604 @@
+asyncapi: '2.6.0'
+info:
+  title: WebSocket XMPP Chat Service API
+  version: '1.0.0'
+  description: |
+    This AsyncAPI document describes the API for a chat service that uses WebSockets
+    with XMPP as the underlying protocol. The chat service supports:
+      - Creating chat groups (with 2 or more users)
+      - Adding or removing users from a chat group
+      - Deleting a chat group
+      - Sending, editing, and deleting messages
+      - Retrieving the list of chats for a specific user
+      - Retrieving previous messages from a specific chat
+servers:
+  production:
+    url: wss://127.0.0.1:8080
+    protocol: wss
+    description: Production server using WebSocket connection with XMPP protocol
+
+channels:
+  chat/create:
+    description: Channel to create a new chat group.
+    publish:
+      operationId: createChatGroup
+      message:
+        $ref: '#/components/messages/CreateChatRequest'
+    subscribe:
+      operationId: chatGroupCreated
+      message:
+        $ref: '#/components/messages/CreateChatEvent'
+
+  chat/{chatId}/name/update:
+    description: Channel to update the name of an existing chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: updateChatGroupName
+      message:
+        $ref: '#/components/messages/UpdateChatNameRequest'
+    subscribe:
+      operationId: chatGroupNameUpdated
+      message:
+        $ref: '#/components/messages/UpdateChatNameEvent'
+
+  chat/delete:
+    description: Channel to delete a chat group.
+    publish:
+      operationId: deleteChatGroup
+      message:
+        $ref: '#/components/messages/DeleteChatRequest'
+    subscribe:
+      operationId: chatGroupDeleted
+      message:
+        $ref: '#/components/messages/DeleteChatEvent'
+  
+  chat/{chatId}/users/add:
+    description: Channel to add users to an existing chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: addUsersToChatGroup
+      message:
+        $ref: '#/components/messages/AddUsersRequest'
+    subscribe:
+      operationId: usersAddedToChatGroup
+      message:
+        $ref: '#/components/messages/AddUsersEvent'
+
+  chat/{chatId}/users/remove:
+    description: Channel to remove users from an existing chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: removeUsersFromChatGroup
+      message:
+        $ref: '#/components/messages/RemoveUsersRequest'
+    subscribe:
+      operationId: usersRemovedFromChatGroup
+      message:
+        $ref: '#/components/messages/RemoveUsersEvent'
+
+  chat/{chatId}/message:
+    description: Channel for sending and receiving messages in a chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: sendMessage
+      message:
+        $ref: '#/components/messages/SendMessageRequest'
+    subscribe:
+      operationId: receiveMessages
+      message:
+        $ref: '#/components/messages/SendMessageEvent'
+
+  chat/{chatId}/message/edit:
+    description: Channel for editing a message in a chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: editMessage
+      message:
+        $ref: '#/components/messages/EditMessageRequest'
+    subscribe:
+      operationId: messageEdited
+      message:
+        $ref: '#/components/messages/EditMessageEvent'
+
+  chat/{chatId}/message/delete:
+    description: Channel for deleting a message in a chat group.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: deleteMessage
+      message:
+        $ref: '#/components/messages/DeleteMessageRequest'
+    subscribe:
+      operationId: messageDeleted
+      message:
+        $ref: '#/components/messages/DeleteMessageEvent'
+
+  chat/{chatId}/message/history:
+    description: Channel to retrieve previous messages from a chat group with pagination.
+    parameters:
+      chatId:
+        description: Unique identifier for the chat group.
+        schema:
+          type: string
+    publish:
+      operationId: requestMessageHistory
+      message:
+        $ref: '#/components/messages/MessageHistoryRequest'
+
+  user/{userId}/chats:
+    description: Channel to retrieve paginated chats for a specific user with pagination.
+    parameters:
+      userId:
+        description: Unique identifier for the user.
+        schema:
+          type: string
+    publish:
+      operationId: requestUserChats
+      message:
+        $ref: '#/components/messages/ChatListRequest'
+    subscribe:
+      operationId: getUserChats
+      message:
+        $ref: '#/components/messages/ChatListEvent'
+
+components:
+  messages:
+    CreateChatRequest:
+      name: CreateChatRequest
+      title: Create Chat Group Request
+      payload:
+        type: object
+        properties:
+          groupName:
+            type: string
+            description: Name of the chat group.
+          users:
+            type: array
+            items:
+              type: string
+            description: List of initial user IDs.
+        required:
+          - groupName
+          - users
+        example:
+          groupName: "Team Chat"
+          users: ["user1", "user2", "user3"]
+
+    CreateChatEvent:
+      name: CreateChatEvent
+      title: Create Chat Group Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Unique identifier for the chat group.
+          groupName:
+            type: string
+            description: Name of the chat group.
+          users:
+            type: array
+            items:
+              type: string
+            description: List of user IDs in the chat group.
+          createdAt:
+            type: string
+            format: date-time
+            description: Timestamp when the chat group was created.
+        required:
+          - chatId
+          - groupName
+          - users
+          - createdAt
+        example:
+          chatId: "chat123"
+          groupName: "Team Chat"
+          users: ["user1", "user2", "user3"]
+          createdAt: "2025-03-03T12:00:00Z"
+
+    AddUsersRequest:
+      name: AddUsersRequest
+      title: Add Users to Chat Group Request
+      payload:
+        type: object
+        properties:
+          userIds:  # Changed to userIds, and made an array
+            type: array
+            items:
+              type: string
+            description: Identifiers of the users to be added.
+        required:
+          - userIds  # Updated required field
+        example:
+          userIds: ["user4", "user5", "user6"]  # Example with multiple user IDs
+
+    AddUsersEvent:
+      name: AddUsersEvent
+      title: Add Users to Chat Group Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Unique identifier for the chat group.
+          userIds:
+            type: array
+            items:
+              type: string
+            description: Identifiers of the users added.
+        required:
+          - chatId
+          - userIds
+        example:
+          chatId: "chat123"
+          userIds: ["user4", "user5", "user6"]
+
+    RemoveUsersRequest:
+      name: RemoveUsersRequest
+      title: Remove Users from Chat Group Request
+      payload:
+        type: object
+        properties:
+          userIds:  # Changed to userIds, and made an array
+            type: array
+            items:
+              type: string
+            description: Identifiers of the users to be removed.
+        required:
+          - userIds  # Updated required field
+        example:
+          userIds: ["user4", "user5"] # Example with multiple user IDs
+
+    RemoveUsersEvent:
+      name: RemoveUsersEvent
+      title: Remove Users from Chat Group Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Unique identifier for the chat group.
+          userIds: # Changed to userIds, and made an array
+            type: array
+            items:
+              type: string
+            description: Identifiers of the users removed.
+        required:
+          - chatId
+          - userIds # Updated required field
+        example:
+          chatId: "chat123"
+          userIds: ["user4", "user5"]
+
+    UpdateChatNameRequest:
+      name: UpdateChatNameRequest
+      title: Update Chat Group Name Request
+      payload:
+        type: object
+        properties:
+          newGroupName:
+            type: string
+            description: The new name for the chat group.
+        required:
+          - newGroupName
+        example:
+          newGroupName: "New Team Chat Name"
+
+    UpdateChatNameEvent:
+      name: UpdateChatNameEvent
+      title: Update Chat Group Name Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Unique identifier for the chat group.
+          newGroupName:
+            type: string
+            description: The updated name of the chat group.
+        required:
+          - chatId
+          - newGroupName
+        example:
+          chatId: "chat123"
+          newGroupName: "New Team Chat Name"
+
+    DeleteChatRequest:
+      name: DeleteChatRequest
+      title: Delete Chat Group Message
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Unique identifier for the chat group.      
+        required:
+          - chatId
+        example:
+          chatId: "chat123"
+
+    DeleteChatEvent:
+      name: DeleteChatEvent
+      title: Delete Chat Group Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Unique identifier for the chat group.
+          deleted:
+            type: boolean
+            description: Boolean to check if the chat was deleted or not
+        required:
+          - chatId
+          - deleted
+        example:
+          chatId: "chat123"
+          deleted: true
+
+    SendMessageRequest:
+      name: SendMessageRequest
+      title: Send Message Request
+      payload:
+        type: object
+        properties:
+          senderId:
+            type: string
+            description: Identifier of the message sender.
+          content:
+            type: string
+            description: Content of the message.
+        required:
+          - senderId
+          - content
+        example:
+          senderId: "user1"
+          content: "Hello, team!"
+
+    SendMessageEvent:
+      name: SendMessageEvent
+      title: Send Message Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Identifier of the chat group.
+          page:
+            type: integer
+            description: Page number for pagination.
+          limit:
+            type: integer
+            description: Number of messages per page.
+          total:
+            type: integer
+            description: Total number of messages available.
+          messages:
+            type: array
+            items:
+              type: object
+              properties:
+                messageId:
+                  type: string
+                  description: Unique identifier for the message.
+                senderId:
+                  type: string
+                  description: Identifier of the message sender.
+                content:
+                  type: string
+                  description: Content of the message.
+                sentAt:
+                  type: string
+                  format: date-time
+                  description: Timestamp when the message was sent.
+              required:
+                - messageId
+                - senderId
+                - content
+                - sentAt
+        required:
+          - chatId
+          - page
+          - limit
+          - total
+          - messages
+        example:
+          chatId: "chat123"
+          page: 1
+          limit: 20
+          total: 50
+          messages:
+            - messageId: "msg567"
+              senderId: "user1"
+              content: "Hello, team!"
+              sentAt: "2025-03-03T12:20:00Z"
+
+    EditMessageRequest:
+      name: EditMessageRequest
+      title: Edit Message Request
+      payload:
+        type: object
+        properties:
+          messageId:
+            type: string
+            description: Unique identifier for the message.
+          newContent:
+            type: string
+            description: Updated content of the message.
+        required:
+          - messageId
+          - newContent
+        example:
+          messageId: "msg567"
+          newContent: "Hello, everyone!"
+
+    EditMessageEvent:
+      name: EditMessageEvent
+      title: Edit Message Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Identifier of the chat group.
+          messageId:
+            type: string
+            description: Unique identifier for the message.
+          newContent:
+            type: string
+            description: Updated content of the message.
+          editedAt:
+            type: string
+            format: date-time
+            description: Timestamp when the message was edited.
+        required:
+          - chatId
+          - messageId
+          - newContent
+          - editedAt
+        example:
+          chatId: "chat123"
+          messageId: "msg567"
+          newContent: "Hello, everyone!"
+          editedAt: "2025-03-03T12:22:00Z"
+
+    DeleteMessageRequest:
+      name: DeleteMessageRequest
+      title: Delete Message Request
+      payload:
+        type: object
+        properties:
+          messageId:
+            type: string
+            description: Unique identifier for the message.   
+        required:
+          - messageId
+        example:
+          messageId: "msg567"
+          
+    DeleteMessageEvent:
+      name: DeleteMessageEvent
+      title: Delete Message Event
+      payload:
+        type: object
+        properties:
+          chatId:
+            type: string
+            description: Identifier of the chat group.
+          messageId:
+            type: string
+            description: Unique identifier for the message.
+        required:
+          - chatId
+          - messageId
+        example:
+          chatId: "chat123"
+          messageId: "msg567"
+
+    MessageHistoryRequest:
+      name: MessageHistory
+      title: Message History Request
+      payload:
+        type: object
+        properties:
+          page:
+            type: integer
+            description: Page number for pagination.
+          limit:
+            type: integer
+            description: Number of messages per page.
+        required:
+          - page
+          - limit
+        example:
+          page: 1
+          limit: 20
+
+    ChatListRequest:
+      name: ChatList
+      title: Chat List for a User Request
+      payload:
+        type: object
+        properties:
+          page:
+            type: integer
+            description: Page number for pagination.
+          limit:
+            type: integer
+            description: Number of messages per page.
+        required:
+          - page
+          - limit
+        example:
+          page: 1
+          limit: 20
+    
+    ChatListEvent:
+      name: ChatList
+      title: Chat List for a User Event
+      payload:
+        type: object
+        properties:
+          userId:
+            type: string
+            description: Identifier of the user.
+          page:
+            type: integer
+            description: Page number for pagination.
+          limit:
+            type: integer
+            description: Number of chats per page.
+          total:
+            type: integer
+            description: Total number of chats available.
+          chats:
+            type: array
+            items:
+              type: object
+              properties:
+                chatId:
+                  type: string
+                  description: Unique identifier for the chat group.
+                groupName:
+                  type: string
+                  description: Name of the chat group.
+              required:
+                - chatId
+                - groupName
+        required:
+          - userId
+          - page
+          - limit
+          - total
+          - chats
+        example:
+          userId: "user1"
+          page: 1
+          limit: 20
+          total: 35
+          chats:
+            - chatId: "chat123"
+              groupName: "Team Chat"
