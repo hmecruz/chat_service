@@ -24,7 +24,7 @@ class UserService:
 
         # Fetch all XMPP rooms this user is in
         all_rooms_full_jid = self.chat_groups_xmpp.get_user_rooms(user_id)
-        all_room_ids = [room.split("@")[0] for room in all_rooms_full_jid]
+        all_room_ids = [room.split("@")[0] for room in all_rooms_full_jid if "@" in room]
         total = len(all_room_ids)
 
         # Paginate
