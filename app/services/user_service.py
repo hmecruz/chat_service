@@ -23,17 +23,18 @@ class UserService:
         validate_id(user_id)
 
         # Fetch all XMPP rooms this user is in
-        all_rooms = self.chat_groups_xmpp.get_user_rooms(user_id)
-        total = len(all_rooms)
+        all_rooms_full_jid = self.chat_groups_xmpp.get_user_rooms(user_id)
+        all_room_ids = [room.split("@")[0] for room in all_rooms_full_jid]
+        total = len(all_room_ids)
 
         # Paginate
         start = (page - 1) * limit
         end = start + limit
-        paginated_rooms = all_rooms[start:end]
+        paginated_room_ids = all_room_ids[start:end]
 
-        # Fetch metadata from DB for each room if available
+        # Fetch metadata from DB for each room
         chat_groups = []
-        for room_id in paginated_rooms:
+        for room_id in paginated_room_ids:
             chat_group = self.chat_groups_dal.get_chat_group(room_id)
             if chat_group:
                 chat_groups.append({
@@ -41,7 +42,7 @@ class UserService:
                     "groupName": chat_group["groupName"],
                 })
             else:
-                # Fallback to show room ID only if DB lookup fails
+                # Fallback if room metadata isn't found
                 chat_groups.append({"chatId": room_id, "groupName": None})
 
         return {
