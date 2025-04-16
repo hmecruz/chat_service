@@ -15,6 +15,7 @@ from .services.user_service import UserService
 from .events.register_chat_groups_events import register_chat_group_events
 from .events.register_chat_messages_events import register_chat_message_events
 from .events.register_user_events import register_user_events
+from .events.register_socketio_connection_events import register_socketio_connection_events
 
 from .xmpp.user_management_xmpp import UserManagementXMPP
 
@@ -52,11 +53,12 @@ def create_app():
     app.config['chat_groups_service'] = chat_groups_service
     app.config['chat_messages_service'] = chat_messages_service 
     app.config['user_service'] = user_service
-
+    
     with app.app_context():
         register_chat_group_events(socketio)
         register_chat_message_events(socketio)
         register_user_events(socketio)
+        register_socketio_connection_events(socketio)
 
     # Ensure DB connection is closed on shutdown
     @app.teardown_appcontext

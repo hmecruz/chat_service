@@ -129,3 +129,14 @@ class ChatGroupsService:
             raise ValueError(f"The following users are still in the room after removal: {remaining_users}")
 
         return user_ids  # Successfully removed users
+
+    def get_chat_users(self, chat_id: str) -> list[str]:
+        """Fetches the list of users in a chat group."""
+        validate_id(chat_id)
+
+        # Fetch occupants from the room
+        occupants_info = self.chat_groups_xmpp.get_room_occupants(chat_id)
+        occupants = {occupant.get("jid").split("@")[0] for occupant in occupants_info if "jid" in occupant}
+
+        return list(occupants)
+        
