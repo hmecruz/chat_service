@@ -27,7 +27,7 @@ def create_app():
 
     app = Flask(__name__)
     # Load configuration from a config file or object
-    app.config.from_object('config.service_config')  # Adjust as required
+    app.config.from_object('config.service_config.ServiceConfig')  # Adjust as required
 
     # Initialize SocketIO with the app instance
     socketio.init_app(app)
