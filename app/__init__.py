@@ -25,7 +25,8 @@ socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app():
 
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder=None)
+    
     # Load configuration from a config file or object
     app.config.from_object('config.service_config.ServiceConfig')  # Adjust as required
 
