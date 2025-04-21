@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentGroupId: null,
     };
 
-    function renderGroups(groups) {
+    // Make renderGroups accessible globally
+    window.renderGroups = function (groups) {
         groupList.innerHTML = '';
         groups.forEach(group => {
             const li = document.createElement('li');
@@ -30,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="text-2xl">${group.image}</div>
                 <div class="font-medium text-gray-800">${group.name}</div>
             `;
-
             li.addEventListener('click', () => {
                 window.groupsData.currentGroupId = group.id;
                 window.showChatUI(group);  // From chat.js
@@ -38,9 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             groupList.appendChild(li);
         });
-    }
+    };
 
-    renderGroups(groups);
+    window.renderGroups(groups); // Initial rendering
 
     createGroupBtn.addEventListener('click', () => {
         createGroupModal.classList.remove('hidden');
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             groups.push(newGroup);
-            renderGroups(groups);
+            window.renderGroups(groups); // Use the global renderGroups
             createGroupModal.classList.add('hidden');
             createGroupForm.reset();
         } else {
