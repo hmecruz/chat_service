@@ -95,10 +95,12 @@ class ChatGroupsService:
             if not chat_group:
                 raise ValueError(f"Chat group with ID {chat_id} not found")
 
+            affected_users = chat_group.get("users", [])
+
             deleted_count = self.chat_groups_dal.delete_chat_group(chat_id)
             if deleted_count == 1:
                 services_logger.info(f"Chat group with ID {chat_id} deleted successfully")
-                return True
+                return True, affected_users
 
             raise ValueError(f"Chat group with ID {chat_id} not found or already deleted")
         except Exception as e:
