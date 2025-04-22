@@ -78,6 +78,7 @@ class ChatGroupsService:
             return {
                 "chatId": str(chat_id),
                 "groupName": chat_group["groupName"],
+                "users": chat_group.get("users"),
             }
         except Exception as e:
             services_logger.error(f"Error updating chat group with ID {chat_id}: {e}")
