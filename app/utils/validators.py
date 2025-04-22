@@ -37,6 +37,25 @@ def validate_users(users: list[str]) -> list[str]:
     
     return users
 
+def validate_removed_users(users: list[str]) -> list[str]:
+    """Validate users list with rules."""
+    if not users:
+        raise ValueError("Missing users field")
+    if not isinstance(users, list):
+        raise ValueError("Invalid users type")
+    if len(users) < 1:
+        raise ValueError(f"At least 1 user required")
+    if len(users) > MAX_USERS_ALLOWED:
+        raise ValueError(f"Maximum {MAX_USERS_ALLOWED} users allowed")
+    
+    for user in users:
+        if not isinstance(user, str):
+            raise ValueError(f"Invalid user type {type(user)}. Expected string")
+        if len(user) > MAX_USER_ID_LENGTH:
+            raise ValueError(f"User ID exceeds {MAX_USER_ID_LENGTH} characters")
+    
+    return users
+
 def validate_message_content(content: str) -> str:
     """Validate message content with rules."""
     if not content:

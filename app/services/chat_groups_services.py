@@ -2,7 +2,7 @@ from flask import current_app
 from ..database.chat_groups import ChatGroups
 from ..xmpp.user_management_xmpp import UserManagementXMPP
 from ..xmpp.chat_groups_xmpp import ChatGroupsXMPP
-from ..utils.validators import validate_id, validate_group_name, validate_users
+from ..utils.validators import validate_id, validate_group_name, validate_users, validate_removed_users
 
 from .logger import services_logger
 
@@ -135,7 +135,9 @@ class ChatGroupsService:
         try:
             services_logger.info(f"Removing users {user_ids} from chat group with ID {chat_id}")
             validate_id(chat_id)
-            validate_users(user_ids)
+            validate_removed_users(user_ids)
+
+            affected_occupants = self._get_occupants_usernames(chat_id)
 
             success = self.chat_groups_xmpp.remove_users_from_room(chat_id, user_ids)
             if not success:
@@ -148,7 +150,7 @@ class ChatGroupsService:
                     raise ValueError(f"The following users are still in the room after removal: {remaining_users}")
 
             services_logger.info(f"Users {user_ids} removed from chat group with ID {chat_id}")
-            return user_ids
+            return user_ids, affected_occupants
         except Exception as e:
             services_logger.error(f"Error removing users from chat group with ID {chat_id}: {e}")
             raise

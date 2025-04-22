@@ -202,7 +202,7 @@ class ChatGroupsEvents:
             # Log the request to remove users from chat
             events_logger.info(f"Removing users {user_ids} from chat group: {chat_id}")
 
-            removed_users = self.chat_groups_service.remove_users_from_chat(chat_id, user_ids)
+            removed_users, target_user_ids = self.chat_groups_service.remove_users_from_chat(chat_id, user_ids)
 
             response = {
                 "chatId": chat_id,
@@ -212,7 +212,7 @@ class ChatGroupsEvents:
             # Log successful user removal
             events_logger.info(f"Users removed from chat group: {chat_id} - {removed_users}")
 
-            self._emit_success('usersRemovedFromChatGroup', response, target_user_ids=removed_users)
+            self._emit_success('usersRemovedFromChatGroup', response, target_user_ids)
 
         except Exception as e:
             # Log error during user removal
