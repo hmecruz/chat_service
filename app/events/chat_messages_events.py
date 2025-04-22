@@ -1,6 +1,8 @@
 from flask import current_app, request, has_request_context
 from flask_socketio import emit
 
+from .logger import events_logger
+
 class ChatMessagesEvents:
     def __init__(self):
         self.chat_messages_service = current_app.config['chat_messages_service']
@@ -28,10 +30,10 @@ class ChatMessagesEvents:
         except Exception as e:
             self._emit_error(f"Failed to fetch users for chatId={chat_id}: {str(e)}")
 
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Event: Send Message
     # Channel: chat/{chatId}/message
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     def handle_send_message(self, data):
         """
         Expected payload (SendMessageRequest):
@@ -48,7 +50,10 @@ class ChatMessagesEvents:
 
             if not chat_id or not sender_id or not content:
                 raise ValueError("Invalid request: chatId, senderId, and content are required fields")
-            
+
+            # Log the message send event
+            events_logger.info(f"Sending message in chatId={chat_id} from sender={sender_id}: {content}")
+
             new_message = self.chat_messages_service.send_message(chat_id, sender_id, content)
 
             response = {
@@ -63,15 +68,21 @@ class ChatMessagesEvents:
                     "sentAt": new_message["sentAt"]
                 }]
             }
+
+            # Log the successful message send
+            events_logger.info(f"Message sent in chatId={chat_id} by sender={sender_id} with messageId={new_message['_id']}")
+
             self._emit_to_chat_users('receiveMessage', response, chat_id, exclude_user_id=sender_id)
 
         except Exception as e:
+            # Log error during message send
+            events_logger.error(f"Error sending message in chatId={data.get('chatId')} from sender={data.get('senderId')}: {str(e)}")
             self._emit_error(str(e), user_id=data.get('senderId'))
-            
-    # -----------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
     # Event: Edit Message
     # Channel: chat/{chatId}/message/edit
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     def handle_edit_message(self, data):
         """
         Expected payload (EditMessageRequest):
@@ -86,6 +97,9 @@ class ChatMessagesEvents:
             message_id = data.get('messageId')
             new_content = data.get('newContent')
 
+            # Log the message edit event
+            events_logger.info(f"Editing message in chatId={chat_id}, messageId={message_id} to new content: {new_content}")
+
             updated_message = self.chat_messages_service.edit_message(message_id, new_content)
 
             response = {
@@ -94,16 +108,21 @@ class ChatMessagesEvents:
                 "newContent": updated_message["content"],
                 "editedAt": updated_message.get("editedAt")
             }
+
+            # Log the successful message edit
+            events_logger.info(f"Message edited in chatId={chat_id}, messageId={message_id}, new content: {new_content}")
+
             self._emit_to_chat_users('messageEdited', response, chat_id)
 
         except Exception as e:
+            # Log error during message edit
+            events_logger.error(f"Error editing message in chatId={data.get('chatId')} messageId={data.get('messageId')}: {str(e)}")
             self._emit_error(str(e))
 
-
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Event: Delete Message
     # Channel: chat/{chatId}/message/delete
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     def handle_delete_message(self, data):
         """
         Expected payload (DeleteMessageRequest):
@@ -116,22 +135,30 @@ class ChatMessagesEvents:
             chat_id = data.get('chatId')
             message_id = data.get('messageId')
 
+            # Log the message delete event
+            events_logger.info(f"Deleting message in chatId={chat_id}, messageId={message_id}")
+
             self.chat_messages_service.delete_message(message_id)
 
             response = {
                 "chatId": chat_id,
                 "messageId": message_id,
             }
+
+            # Log the successful message delete
+            events_logger.info(f"Message deleted in chatId={chat_id}, messageId={message_id}")
+
             self._emit_to_chat_users('messageDeleted', response, chat_id)
 
         except Exception as e:
+            # Log error during message deletion
+            events_logger.error(f"Error deleting message in chatId={data.get('chatId')} messageId={data.get('messageId')}: {str(e)}")
             self._emit_error(str(e))
-            
-    # -----------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
     # Event: Request Message History
     # Channel: chat/{chatId}/message/history
-    # Publish OperationId: requestMessageHistory
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     def handle_message_history(self, data):
         """
         Expected payload (MessageHistoryRequest):
@@ -145,6 +172,9 @@ class ChatMessagesEvents:
             chat_id = data.get('chatId')
             page = data.get('page', 1)
             limit = data.get('limit', 20)
+
+            # Log the request for message history
+            events_logger.info(f"Requesting message history for chatId={chat_id}, page={page}, limit={limit}")
 
             messages_list = self.chat_messages_service.get_messages(chat_id, page, limit)
             total = len(messages_list)
@@ -169,5 +199,10 @@ class ChatMessagesEvents:
             else:
                 emit('messageHistoryResponse', response)
 
+            # Log the successful message history retrieval
+            events_logger.info(f"Message history for chatId={chat_id} retrieved successfully")
+
         except Exception as e:
+            # Log error during message history request
+            events_logger.error(f"Error retrieving message history for chatId={data.get('chatId')}: {str(e)}")
             self._emit_error(str(e))

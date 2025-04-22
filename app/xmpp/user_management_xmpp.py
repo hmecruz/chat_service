@@ -7,6 +7,8 @@ from requests.exceptions import RequestException
 
 from config.xmpp_config import XMPPConfig
 
+from .logger import xmpp_logger
+
 
 class UserManagementXMPP:
     def __init__(self):
@@ -22,9 +24,10 @@ class UserManagementXMPP:
                 verify=False
             )
             response.raise_for_status()
+            xmpp_logger.info(f"✅ HTTP POST request to {endpoint} succeeded.")
             return response
         except RequestException as e:
-            logging.exception(f"❌ HTTP request failed (POST {endpoint}): {e}")
+            xmpp_logger.exception(f"❌ HTTP request failed (POST {endpoint}): {e}")
             raise
 
     @staticmethod
@@ -39,9 +42,9 @@ class UserManagementXMPP:
 
         try:
             UserManagementXMPP._post(endpoint, payload)
-            logging.info(f"✅ Registered user {username}@{XMPPConfig.VHOST}")
+            xmpp_logger.info(f"✅ Registered user {username}@{XMPPConfig.VHOST}")
         except RequestException:
-            logging.error(f"❌ Failed to register user {username}@{XMPPConfig.VHOST}")
+            xmpp_logger.error(f"❌ Failed to register user {username}@{XMPPConfig.VHOST}")
 
     @staticmethod
     def register_users(users: List[Tuple[str, str]]):
@@ -60,9 +63,9 @@ class UserManagementXMPP:
 
         try:
             UserManagementXMPP._post(endpoint, payload)
-            logging.info(f"🗑️ Unregistered user {username}@{XMPPConfig.VHOST}")
+            xmpp_logger.info(f"🗑️ Unregistered user {username}@{XMPPConfig.VHOST}")
         except RequestException:
-            logging.error(f"❌ Failed to unregister user {username}@{XMPPConfig.VHOST}")
+            xmpp_logger.error(f"❌ Failed to unregister user {username}@{XMPPConfig.VHOST}")
 
     @staticmethod
     def get_registered_users() -> List[dict]:
@@ -73,10 +76,10 @@ class UserManagementXMPP:
         try:
             response = UserManagementXMPP._post(endpoint, payload)
             registered_users = response.json()
-            logging.info(f"✅ Retrieved registered users: {registered_users}")
+            xmpp_logger.info(f"✅ Retrieved registered users: {registered_users}")
             return registered_users
         except RequestException:
-            logging.error("❌ Failed to retrieve registered users")
+            xmpp_logger.error("❌ Failed to retrieve registered users")
             return []
 
     @staticmethod
@@ -94,4 +97,7 @@ class UserManagementXMPP:
         ]
 
         if missing_users:
+            xmpp_logger.info(f"❌ Some users are missing and will be registered: {missing_users}")
             UserManagementXMPP.register_users(missing_users)
+        else:
+            xmpp_logger.info(f"✅ All users are already registered: {users}")
