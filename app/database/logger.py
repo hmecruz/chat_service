@@ -8,7 +8,7 @@ log_file_path = os.path.join(log_dir, 'database.log')
 # Setup logger
 database_logger = logging.getLogger("database_logger")
 database_logger.setLevel(logging.DEBUG)
-database_logger.propagate = False
+database_logger.propagate = True
 database_logger.handlers.clear()
 
 file_handler = logging.FileHandler(log_file_path, mode='w')  # Use append mode

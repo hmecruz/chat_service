@@ -8,7 +8,7 @@ log_file_path = os.path.join(log_dir, 'xmpp_events.log')
 # Setup logger for XMPP events
 xmpp_logger = logging.getLogger("xmpp_logger")
 xmpp_logger.setLevel(logging.DEBUG)
-xmpp_logger.propagate = False
+xmpp_logger.propagate = True
 xmpp_logger.handlers.clear()
 
 # Create a file handler to store logs in 'xmpp_events.log'

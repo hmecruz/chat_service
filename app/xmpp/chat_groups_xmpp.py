@@ -122,6 +122,23 @@ class ChatGroupsXMPP:
         except RequestException:
             xmpp_logger.error(f"❌ Failed to get occupants for room {room}@{XMPPConfig.MUC_SERVICE}")
             return []
+        
+    def get_room_affiliated_usernames(self, chat_id: str) -> list[str]:
+        """Fetch affiliated users (owners/members) from XMPP room."""
+        endpoint = f"{XMPPConfig.EJABBERD_API_URL}/get_room_affiliations"
+        payload = {
+            "room": chat_id,
+            "service": XMPPConfig.MUC_SERVICE,
+        }
+
+        try:
+            response = ChatGroupsXMPP._post(endpoint, payload)
+            affiliations = response.json()
+            xmpp_logger.info(f"✅ Affiliations for room {chat_id}@{XMPPConfig.MUC_SERVICE}: {affiliations}")
+            return affiliations
+        except Exception as e:
+            xmpp_logger.error(f"❌ Failed to retrieve affiliations for room {chat_id}: {e}")
+            return []
 
     @staticmethod
     def set_room_affiliation(room: str, user: str, affiliation: str) -> bool:

@@ -15,7 +15,7 @@ class ChatGroupsService:
     def _get_occupants_usernames(self, chat_id: str) -> set[str]:
         try:
             services_logger.info(f"Getting occupants for chat group with ID: {chat_id}")
-            occupants_info = self.chat_groups_xmpp.get_room_occupants(chat_id)
+            occupants_info = self.chat_groups_xmpp.get_room_affiliated_usernames(chat_id)
             occupants = {o.get("jid").split("@")[0] for o in occupants_info if "jid" in o}
             services_logger.info(f"Found occupants: {occupants}")
             return occupants
@@ -29,7 +29,7 @@ class ChatGroupsService:
             validate_group_name(group_name)
             validate_users(users)
 
-            chat_id = self.chat_groups_dal.create_chat_group(group_name)
+            chat_id = self.chat_groups_dal.create_chat_group(group_name).get("_id")
             if not chat_id:
                 raise ValueError("Chat group not created")
             

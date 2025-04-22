@@ -55,13 +55,13 @@ class ChatGroupsEvents:
             events_logger.info(f"Creating chat group: {group_name} for users: {users}")
 
             chat_group = self.chat_groups_service.create_chat_group(group_name, users)
-            chat_id = str(chat_group["_id"])
+            chat_id = str(chat_group["chatId"])
 
             response = {
                 "chatId": chat_id,
                 "groupName": chat_group["groupName"],
                 "users": chat_group["users"],
-                "createdAt": chat_group["createdAt"]
+                "createdAt": chat_group["createdAt"].isoformat()
             }
 
             # Log successful creation of chat group

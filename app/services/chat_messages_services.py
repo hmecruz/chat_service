@@ -30,7 +30,8 @@ class ChatMessagesService:
                 raise RuntimeError("Failed to send message via XMPP")
             services_logger.info(f"Message sent successfully via XMPP to {chat_id}")
 
-            message_id = self.chat_messages_dal.insert_message(chat_id, sender_id, content)
+            message_obj_id = self.chat_messages_dal.insert_message(chat_id, sender_id, content)
+            message_id = message_obj_id.get("messageId")
             if not message_id:
                 raise RuntimeError("Failed to store message")
             services_logger.info(f"Message stored in database with ID: {message_id}")

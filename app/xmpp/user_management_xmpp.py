@@ -83,21 +83,24 @@ class UserManagementXMPP:
             return []
 
     @staticmethod
-    def ensure_users_register(users: List[str], default_password: str = "password") -> None:
+    def ensure_users_register(users: list[str], default_password: str = "password") -> None:
         """Ensure users are registered in the XMPP server, register them if missing."""
-        registered_usernames = [
-            user.get("username")
-            for user in UserManagementXMPP.get_registered_users()
-        ]
+        try:
 
-        missing_users = [
-            (user, default_password)
-            for user in users
-            if user not in registered_usernames
-        ]
+            registered_usernames = UserManagementXMPP.get_registered_users()
+            
+            missing_users = [
+                (user, default_password)
+                for user in users
+                if user not in registered_usernames
+            ]
 
-        if missing_users:
-            xmpp_logger.info(f"❌ Some users are missing and will be registered: {missing_users}")
-            UserManagementXMPP.register_users(missing_users)
-        else:
-            xmpp_logger.info(f"✅ All users are already registered: {users}")
+            if missing_users:
+                xmpp_logger.info(f"❌ Some users are missing and will be registered: {missing_users}")
+                UserManagementXMPP.register_users(missing_users)
+            else:
+                xmpp_logger.info(f"✅ All users are already registered: {users}")
+        
+        except Exception as e:
+            xmpp_logger.error(f"🔥 Error ensuring user registration: {str(e)}")
+            raise
