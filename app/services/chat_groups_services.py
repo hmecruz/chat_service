@@ -126,7 +126,7 @@ class ChatGroupsService:
                     raise ValueError(f"The following users were not found in the room after addition: {missing_users}")
 
             services_logger.info(f"Users {user_ids} added to chat group with ID {chat_id}")
-            return user_ids
+            return user_ids, occupants
         except Exception as e:
             services_logger.error(f"Error adding users to chat group with ID {chat_id}: {e}")
             raise

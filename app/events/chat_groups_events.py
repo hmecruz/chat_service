@@ -166,7 +166,7 @@ class ChatGroupsEvents:
             # Log the request to add users to chat
             events_logger.info(f"Adding users {user_ids} to chat group: {chat_id}")
 
-            added_users = self.chat_groups_service.add_users_to_chat(chat_id, user_ids)
+            added_users, target_user_ids = self.chat_groups_service.add_users_to_chat(chat_id, user_ids)
 
             response = {
                 "chatId": chat_id,
@@ -176,7 +176,7 @@ class ChatGroupsEvents:
             # Log successful user addition
             events_logger.info(f"Users added to chat group: {chat_id} - {added_users}")
 
-            self._emit_success('usersAddedToChatGroup', response, target_user_ids=added_users)
+            self._emit_success('usersAddedToChatGroup', response, target_user_ids)
 
         except Exception as e:
             # Log error during user addition

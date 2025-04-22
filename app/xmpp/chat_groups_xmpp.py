@@ -82,9 +82,14 @@ class ChatGroupsXMPP:
         }
 
         try:
-            ChatGroupsXMPP._post(endpoint, payload)
-            xmpp_logger.info(f"🗑️ Room {chat_id}@{XMPPConfig.MUC_SERVICE} destroyed successfully.")
-            return True
+            response = ChatGroupsXMPP._post(endpoint, payload)
+            result = response.json()
+            if result == 0:
+                xmpp_logger.info(f"🗑️ Room {chat_id}@{XMPPConfig.MUC_SERVICE} destroyed successfully.")
+                return True
+            else:
+                xmpp_logger.error(f"❌ Failed to destroy room {chat_id}@{XMPPConfig.MUC_SERVICE}: {result}")
+                return False
         except RequestException:
             xmpp_logger.error(f"❌ Failed to destroy room {chat_id}@{XMPPConfig.MUC_SERVICE}")
             return False
