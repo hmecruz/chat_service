@@ -36,6 +36,13 @@ class ChatGroups:
         else:
             database_logger.info(f"No chat group found with ID {chat_id}.")
         return group
+    
+    def get_all_chat_group_ids(self) -> list[str]:
+        """Retrieve the _id of all chat groups from the database."""
+        groups = self.chat_groups.find({}, {"_id": 1}).sort("createdAt", -1)
+        group_ids = [str(group["_id"]) for group in groups]
+        database_logger.info(f"Retrieved {len(group_ids)} chat group IDs.")
+        return group_ids
 
     def update_chat_group_name(self, chat_id: str, group_name: str) -> bool:
         """Update a chat group's name."""
@@ -67,3 +74,4 @@ class ChatGroups:
         else:
             database_logger.info(f"No chat group found to delete with ID {chat_id}.")
         return result.deleted_count
+    

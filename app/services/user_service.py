@@ -19,44 +19,42 @@ class UserService:
         Returns:
             dict: Contains total number of rooms and list of chat group metadata.
         """
-        services_logger.info(f"Fetching chat list for user: {user_id}, page: {page}, limit: {limit}")
+        services_logger.info(f"Fetching affiliated chat list for user: {user_id}, page: {page}, limit: {limit}")
 
         try:
             if page < 1 or limit < 1:
                 raise ValueError("Page and limit must be greater than zero")
-            services_logger.debug(f"Validated pagination parameters: page={page}, limit={limit}")
-            
+
             validate_id(user_id)
-            services_logger.debug(f"Validated user_id: {user_id}")
 
-            # Fetch all XMPP rooms this user is in
-            all_rooms_full_jid = self.chat_groups_xmpp.get_user_rooms(user_id)
-            services_logger.debug(f"Fetched all rooms for user {user_id}: {all_rooms_full_jid}")
+            all_group_ids = self.chat_groups_dal.get_all_chat_group_ids()
+            services_logger.debug(f"Retrieved {len(all_group_ids)} total chat group IDs")
 
-            all_room_ids = [room.split("@")[0] for room in all_rooms_full_jid if "@" in room]
-            total = len(all_room_ids)
-            services_logger.debug(f"Total rooms for user {user_id}: {total}")
+            affiliated_groups = []
+            for group_id in all_group_ids:
+                affiliation = ChatGroupsXMPP.get_user_affiliation_in_room(group_id, user_id)
+                if affiliation and affiliation is not None:
+                    affiliated_groups.append(group_id)
 
-            # Paginate
+            total = len(affiliated_groups)
+            services_logger.debug(f"User {user_id} is affiliated with {total} chat groups")
+
             start = (page - 1) * limit
             end = start + limit
-            paginated_room_ids = all_room_ids[start:end]
-            services_logger.debug(f"Paginated room IDs: {paginated_room_ids}")
+            paginated_ids = affiliated_groups[start:end]
 
-            # Fetch metadata from DB for each room
             chat_groups = []
-            for room_id in paginated_room_ids:
-                chat_group = self.chat_groups_dal.get_chat_group(room_id)
+            for group_id in paginated_ids:
+                chat_group = self.chat_groups_dal.get_chat_group(group_id)
                 if chat_group:
                     chat_groups.append({
                         "chatId": str(chat_group["_id"]),
                         "groupName": chat_group["groupName"],
                     })
-                    services_logger.debug(f"Fetched metadata for room {room_id}")
+                    services_logger.debug(f"Included group {group_id}")
                 else:
-                    # Fallback if room metadata isn't found
-                    chat_groups.append({"chatId": room_id, "groupName": None})
-                    services_logger.warning(f"Metadata not found for room {room_id}")
+                    chat_groups.append({"chatId": group_id, "groupName": None})
+                    services_logger.warning(f"Metadata not found for group {group_id}")
 
             result = {
                 "userId": user_id,
@@ -66,8 +64,9 @@ class UserService:
                 "chats": chat_groups
             }
 
-            services_logger.info(f"Successfully fetched chat list for user {user_id}")
+            services_logger.info(f"✅ Successfully fetched chat list for user {user_id}")
             return result
+
         except Exception as e:
-            services_logger.error(f"Error fetching chat list for user {user_id}: {e}")
+            services_logger.error(f"❌ Error in get_chat_list for user {user_id}: {e}")
             raise

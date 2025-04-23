@@ -110,7 +110,25 @@ class ChatGroupsXMPP:
         except RequestException:
             xmpp_logger.error(f"❌ Failed to get rooms for user {username}@{XMPPConfig.VHOST}")
             return []
+        
+    @staticmethod
+    def get_user_affiliation_in_room(room: str, username: str) -> str | None:
+        """Get a user's affiliation (e.g., owner, member, none) in a specific XMPP chat room."""
+        endpoint = f"{XMPPConfig.EJABBERD_API_URL}/get_room_affiliation"
+        payload = {
+            "room": room,
+            "service": XMPPConfig.MUC_SERVICE,
+            "jid": f"{username}@{XMPPConfig.VHOST}"
+        }
 
+        try:
+            response = ChatGroupsXMPP._post(endpoint, payload)
+            xmpp_logger.info(f"✅ Affiliation of {username}@{XMPPConfig.VHOST} in room {room}: {response}")
+            return response
+        except RequestException as e:
+            xmpp_logger.error(f"❌ Failed to get affiliation of {username}@{XMPPConfig.VHOST} in room {room}: {e}")
+            return None
+        
     @staticmethod
     def get_room_occupants(room: str) -> list[dict]:
         endpoint = f"{XMPPConfig.EJABBERD_API_URL}/get_room_occupants"

@@ -56,7 +56,7 @@ class UserEvents:
             }
 
             events_logger.info(f"Successfully fetched chat list for user {user_id}. Total chats: {result['total']}")
-            emit('chatList', response, room=user_id)
+            emit('getUserChats', response, room=user_id)
 
         except Exception as e:
             error_message = str(e)
