@@ -4,5 +4,6 @@ __pycache__/
 .pytest_cache/
 *.log
 test.py
+test2.py
 database.txt
 chat-widget/node_modules/

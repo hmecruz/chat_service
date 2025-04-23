@@ -7,6 +7,18 @@ class UserEvents:
     def __init__(self):
         self.user_service = current_app.config['user_service']
 
+    def _emit_success(self, event_name, response, target_user_ids=None):
+        """
+        Emit success to specific user rooms, or fallback to broadcast (e.g., in tests).
+        """
+        if target_user_ids:
+            for user_id in target_user_ids:
+                emit(event_name, response, room=user_id)
+        elif has_request_context() and hasattr(request, 'sid'):
+            emit(event_name, response, room=request.sid)
+        else:
+            emit(event_name, response, broadcast=True)
+
     def _emit_error(self, message, user_id=None, type="processing_error"):
         error_payload = {
             "type": type,
@@ -56,8 +68,9 @@ class UserEvents:
             }
 
             events_logger.info(f"Successfully fetched chat list for user {user_id}. Total chats: {result['total']}")
-            emit('getUserChats', response, room=user_id)
-
+            self._emit_success('getUserChats', response)
+            events_logger.info(f"Chat list for user {user_id}: {response['chats']}")
+        
         except Exception as e:
             error_message = str(e)
             events_logger.error(f"Failed to handle get chat list for user {data.get('userId')}. Error: {error_message}")
