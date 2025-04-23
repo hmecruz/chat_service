@@ -66,7 +66,6 @@ class ChatGroupsEvents:
 
             # Log successful creation of chat group
             events_logger.info(f"Chat group created: {chat_id} ({group_name})")
-
             self._emit_success('chatGroupCreated', response, target_user_ids=chat_group["users"])
 
         except Exception as e:

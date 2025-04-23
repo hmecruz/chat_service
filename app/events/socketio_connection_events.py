@@ -57,4 +57,7 @@ class SocketIOConnectionEvents:
 
         # Join user's personal room
         join_room(user_id)
+
+        events_logger.debug(f"Joining room: {repr(user_id)}")
+
         emit('connected', {'message': f'Connected as {user_id}'})

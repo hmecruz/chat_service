@@ -68,7 +68,7 @@ class UserEvents:
             }
 
             events_logger.info(f"Successfully fetched chat list for user {user_id}. Total chats: {result['total']}")
-            self._emit_success('getUserChats', response)
+            self._emit_success('getUserChats', response, target_user_ids=[user_id])
             events_logger.info(f"Chat list for user {user_id}: {response['chats']}")
         
         except Exception as e:

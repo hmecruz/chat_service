@@ -26,6 +26,7 @@ class ChatMessagesEvents:
             users = self.chat_groups_service.get_chat_users(chat_id)
             for user_id in users:
                 if user_id != exclude_user_id:
+                    events_logger.info(f"Emitting event '{event_name}' to user {user_id} in chatId={chat_id}")
                     emit(event_name, payload, room=user_id)
         except Exception as e:
             self._emit_error(f"Failed to fetch users for chatId={chat_id}: {str(e)}")
@@ -65,7 +66,7 @@ class ChatMessagesEvents:
                     "messageId": str(new_message["_id"]),
                     "senderId": new_message["sender_id"],
                     "content": new_message["content"],
-                    "sentAt": new_message["sentAt"]
+                    "sentAt": new_message["sentAt"].isoformat()
                 }]
             }
 
@@ -106,7 +107,7 @@ class ChatMessagesEvents:
                 "chatId": chat_id,
                 "messageId": str(updated_message["_id"]),
                 "newContent": updated_message["content"],
-                "editedAt": updated_message.get("editedAt")
+                "editedAt": updated_message.get("editedAt").isoformat() if updated_message.get("editedAt") else None
             }
 
             # Log the successful message edit
@@ -183,7 +184,7 @@ class ChatMessagesEvents:
                 "messageId": str(msg["_id"]),
                 "senderId": msg["sender_id"],
                 "content": msg["content"],
-                "sentAt": msg["sentAt"]
+                "sentAt": msg["sentAt"].isoformat(),
             } for msg in messages_list]
 
             response = {
