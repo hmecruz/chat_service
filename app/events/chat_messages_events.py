@@ -101,13 +101,13 @@ class ChatMessagesEvents:
             # Log the message edit event
             events_logger.info(f"Editing message in chatId={chat_id}, messageId={message_id} to new content: {new_content}")
 
-            updated_message = self.chat_messages_service.edit_message(message_id, new_content)
+            updated_message = self.chat_messages_service.edit_message(chat_id, message_id, new_content)
 
             response = {
                 "chatId": chat_id,
                 "messageId": str(updated_message["_id"]),
                 "newContent": updated_message["content"],
-                "editedAt": updated_message.get("editedAt").isoformat() if updated_message.get("editedAt") else None
+                "editedAt": updated_message.get("editedAt").isoformat()
             }
 
             # Log the successful message edit
@@ -139,7 +139,7 @@ class ChatMessagesEvents:
             # Log the message delete event
             events_logger.info(f"Deleting message in chatId={chat_id}, messageId={message_id}")
 
-            self.chat_messages_service.delete_message(message_id)
+            self.chat_messages_service.delete_message(chat_id, message_id)
 
             response = {
                 "chatId": chat_id,
