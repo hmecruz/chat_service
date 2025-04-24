@@ -12,11 +12,15 @@ def serve_index():
 
 @static_routes_bp.route('/assets/<path:path>')  # Use /assets instead of /static
 def serve_custom_static(path):
-    return send_from_directory(os.path.join(FRONTEND_PATH, 'assests'), path)
+    return send_from_directory(os.path.join(FRONTEND_PATH, 'assets'), path)
 
 @static_routes_bp.route('/debug-test')
 def debug_static_test():
     return send_from_directory(
-        os.path.join(FRONTEND_PATH, 'assests', 'js'),
+        os.path.join(FRONTEND_PATH, 'assets', 'js'),
         'groups.js'
     )
+
+@static_routes_bp.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(FRONTEND_PATH, 'assets', 'images'), 'default_group.png')  # or a real favicon

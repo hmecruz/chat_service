@@ -2,7 +2,7 @@ import jwt
 from flask import request, current_app
 from flask_socketio import join_room, emit, disconnect
 
-from .logger import events_logger 
+from .logger import events_logger
 
 class SocketIOConnectionEvents:
     """
@@ -10,13 +10,13 @@ class SocketIOConnectionEvents:
     """
 
     def handle_connect(self):
-        token = request.args.get('token')
+        token = request.args.get('token')  # token can be passed in query string
         user_id = None
 
         # Log connection attempt
         events_logger.info(f"Connection attempt. Token provided: {bool(token)}")
 
-        # Try JWT-based auth first
+        # First, try to decode JWT token if available
         if token:
             try:
                 decoded = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
@@ -25,9 +25,7 @@ class SocketIOConnectionEvents:
                 if not user_id:
                     raise ValueError("Missing user ID in token")
                 
-                # Log successful JWT decoding
                 events_logger.info(f"User {user_id} decoded from token.")
-
             except jwt.ExpiredSignatureError:
                 events_logger.warning("Token expired.")
                 emit('error', {'type': 'unauthorized', 'message': 'Token expired'})
@@ -43,14 +41,21 @@ class SocketIOConnectionEvents:
                 emit('error', {'type': 'server_error', 'message': str(e)})
                 disconnect()
                 return
-        else:
-            # Fallback to userId in query string
+
+        # If JWT fails or token is not provided, try reading userId from headers
+        if not user_id and 'userId' in request.headers:
+            user_id = request.headers['userId']
+
+        # If still no userId, check the query string
+        if not user_id:
             user_id = request.args.get('userId')
-            if not user_id:
-                events_logger.warning("Missing token or userId.")
-                emit('error', {'type': 'unauthorized', 'message': 'Missing token or userId'})
-                disconnect()
-                return
+
+        # If userId is still missing, reject the connection
+        if not user_id:
+            events_logger.warning("Missing token or userId.")
+            emit('error', {'type': 'unauthorized', 'message': 'Missing token or userId'})
+            disconnect()
+            return
 
         # Log successful connection
         events_logger.info(f"User {user_id} connected successfully.")
