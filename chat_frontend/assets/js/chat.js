@@ -115,57 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     createEditGroupModal();
 
-    // Initialize the chat UI
-    window.showChatUI = function (group) {
-        chatHeader.classList.remove('hidden');
-        chatMessages.classList.remove('hidden');
-        chatInputContainer.classList.remove('hidden');
-
-        currentActiveGroup = group; // Store the active group
-        currentChatGroupId = group.chatId || group.id; // Set the local variable
-        currentChatGroupName = group.groupName || group.name; // Set the local variable
-
-        // Update messageHistoryState with the actual groupId
-        messageHistoryState[currentChatGroupId] = messageHistoryState['undefined'];
-        delete messageHistoryState['undefined'];
-        messageHistoryState[currentChatGroupId].page = 1;
-        messageHistoryState[currentChatGroupId].isLoading = false;
-        messageHistoryState[currentChatGroupId].hasMore = true;
-
-        chatHeader.innerHTML = `
-            ${currentChatGroupName}
-            <button id="edit-group-header-btn" class="text-gray-500 hover:text-blue-500 focus:outline-none ml-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536-7.072 7.072m1.414-1.414l7.071-7.071 7.07 7.071a4 4 0 01-5.656 5.656l-7.07-7.071 1.414-1.414z" />
-                </svg>
-            </button>
-        `;
-        const editGroupHeaderBtn = document.getElementById('edit-group-header-btn');
-        if (editGroupHeaderBtn) {
-            editGroupHeaderBtn.addEventListener('click', () => {
-                if (currentActiveGroup) {
-                    editGroupNameInput.value = currentChatGroupName;
-                    editUsersInput.value = currentActiveGroup.users ? currentActiveGroup.users.join(', ') : '';
-                    editGroupModal.classList.remove('hidden');
-                }
-            });
-        }
-
-        console.log('chat.js currentChatGroupId set to:', currentChatGroupId);
-        messagesByGroupId[currentChatGroupId] = []; // Initialize message array for the new group
-        messageHistoryState[currentChatGroupId] = { page: 1, isLoading: false, hasMore: true }; // Initialize history state
-        renderMessages(currentChatGroupId); // Initial empty render
-        loadInitialMessages(currentChatGroupId);
-    };
-
-    function loadInitialMessages(groupId) {
-        if (!messageHistoryState[groupId].isLoading && messageHistoryState[groupId].hasMore) {
-            messageHistoryState[groupId].isLoading = true;
-            fetchMessageHistory(socket, groupId, messageHistoryState[groupId].page, messagesPerPage);
-            console.log('Loading initial messages for group:', groupId);
-        }
-    }
-
     function renderMessages(groupId, prepend = false) {
         if (!renderedMessageIdsByGroup[groupId]) {
             renderedMessageIdsByGroup[groupId] = new Set();
@@ -218,6 +167,61 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             chatMessages.appendChild(fragment);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+
+    // Initialize the chat UI
+    window.showChatUI = function (group) {
+        chatHeader.classList.remove('hidden');
+        chatMessages.classList.remove('hidden');
+        chatInputContainer.classList.remove('hidden');
+
+        currentActiveGroup = group;
+        currentChatGroupId = group.chatId || group.id;
+        currentChatGroupName = group.groupName || group.name;
+
+        // ✅ Clear old messages from the UI
+        chatMessages.innerHTML = '';
+        renderedMessageIdsByGroup[currentChatGroupId] = new Set();
+
+        // ✅ Ensure state is initialized for the new group
+        messagesByGroupId[currentChatGroupId] = [];
+        messageHistoryState[currentChatGroupId] = { page: 1, isLoading: false, hasMore: true };
+
+        // Set up header with edit button
+        chatHeader.innerHTML = `
+            ${currentChatGroupName}
+            <button id="edit-group-header-btn" class="text-gray-500 hover:text-blue-500 focus:outline-none ml-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536-7.072 7.072m1.414-1.414l7.071-7.071 7.07 7.071a4 4 0 01-5.656 5.656l-7.07-7.071 1.414-1.414z" />
+                </svg>
+            </button>
+        `;
+
+        const editGroupHeaderBtn = document.getElementById('edit-group-header-btn');
+        if (editGroupHeaderBtn) {
+            editGroupHeaderBtn.addEventListener('click', () => {
+                if (currentActiveGroup) {
+                    editGroupNameInput.value = currentChatGroupName;
+                    editUsersInput.value = currentActiveGroup.users ? currentActiveGroup.users.join(', ') : '';
+                    editGroupModal.classList.remove('hidden');
+                }
+            });
+        }
+
+        console.log('chat.js currentChatGroupId set to:', currentChatGroupId);
+
+        // Initial empty render & fetch from server
+        renderMessages(currentChatGroupId);
+        loadInitialMessages(currentChatGroupId);
+    };
+
+
+    function loadInitialMessages(groupId) {
+        if (!messageHistoryState[groupId].isLoading && messageHistoryState[groupId].hasMore) {
+            messageHistoryState[groupId].isLoading = true;
+            fetchMessageHistory(socket, groupId, messageHistoryState[groupId].page, messagesPerPage);
+            console.log('Loading initial messages for group:', groupId);
         }
     }
 
@@ -275,6 +279,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 messagesByGroupId[data.chatId].reverse();
                 console.log('After initial load replace and reverse:', messagesByGroupId[data.chatId].length);
             }
+
+            if (!messageHistoryState[data.chatId]) {
+                messageHistoryState[data.chatId] = {
+                    isLoading: false,
+                    hasMore: true
+                };
+            }
+            
+            messageHistoryState[data.chatId].isLoading = false;
+            messageHistoryState[data.chatId].hasMore = isHistoryLoad
+                ? data.messages.length > 0
+                : data.messages.length < data.total;
     
             // ✅ Always reset loading state regardless of message type
             messageHistoryState[data.chatId].isLoading = false;
