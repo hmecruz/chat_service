@@ -250,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 text: msgData.content,
                 timestamp: new Date(msgData.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }));
-            
     
             console.log(`Processing ${isHistoryLoad ? 'historical' : 'initial'} messages for page ${data.page}:`, newMessages);
     
@@ -265,6 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ...messagesByGroupId[data.chatId]
                 ];
                 console.log('After prepending:', messagesByGroupId[data.chatId].length);
+    
+                // ✅ Only update hasMore when fetching history
+                messageHistoryState[data.chatId].hasMore =
+                    messagesByGroupId[data.chatId].length < data.total;
             } else {
                 console.log('Before initial load replace:', messagesByGroupId[data.chatId].length);
                 messagesByGroupId[data.chatId] = [...newMessages];
@@ -272,13 +275,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('After initial load replace and reverse:', messagesByGroupId[data.chatId].length);
             }
     
+            // ✅ Always reset loading state regardless of message type
             messageHistoryState[data.chatId].isLoading = false;
-            messageHistoryState[data.chatId].hasMore = messagesByGroupId[data.chatId].length < data.total;
     
             renderMessages(data.chatId, isHistoryLoad);
         }
     });
-
+    
     chatMessages.addEventListener('scroll', () => {
         console.log('Scroll event triggered');
         console.log('chatMessages.scrollTop:', chatMessages.scrollTop);
