@@ -160,6 +160,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function prependMessages(newMsgs) {
+        const fragment = document.createDocumentFragment();
+      
+        newMsgs.forEach(msg => {
+          const wrapper = document.createElement('div');
+          wrapper.className = "relative flex flex-col mb-2";
+          const isCurrentUser = msg.sender === currentUser;
+      
+          const msgDiv = document.createElement('div');
+          msgDiv.className = `
+            max-w-[75%] p-3 rounded-lg shadow
+            ${isCurrentUser ? 'bg-green-100 self-end text-right' : 'bg-white self-start text-left'}
+            cursor-pointer
+          `;
+          msgDiv.innerHTML = `
+            <div class="text-sm font-semibold">${msg.sender}</div>
+            <div class="text-base break-words">${msg.text}</div>
+            <div class="text-xs text-gray-400 mt-1">${msg.timestamp}</div>
+          `;
+          wrapper.appendChild(msgDiv);
+      
+          // (Optionally add edit/delete controls here, if you still want them on prepended items)
+      
+          fragment.appendChild(wrapper);
+        });
+      
+        // Preserve scroll position:
+        const oldScrollHeight = chatMessages.scrollHeight;
+        chatMessages.prepend(fragment);
+        chatMessages.scrollTop = chatMessages.scrollHeight - oldScrollHeight;
+    }
+
     function renderMessages(groupId, prepend = false) {
         const messages = messagesByGroupId[groupId] || [];
         const fragment = document.createDocumentFragment();
@@ -282,25 +314,26 @@ document.addEventListener('DOMContentLoaded', () => {
     
             console.log(`Processing ${isHistoryLoad ? 'historical' : 'initial'} messages for page ${data.page}:`, newMessages);
     
-            if (!messagesByGroupId[data.chatId]) {
-                messagesByGroupId[data.chatId] = [];
-            }
-    
             if (isHistoryLoad) {
-                console.log('Before prepending:', messagesByGroupId[data.chatId].length);
-                messagesByGroupId[data.chatId] = [...newMessages, ...messagesByGroupId[data.chatId]];
-                console.log('After prepending:', messagesByGroupId[data.chatId].length);
+                // 1) Update local state
+                messagesByGroupId[data.chatId] = [
+                  ...newMessages,
+                  ...messagesByGroupId[data.chatId]
+                ];
+                messageHistoryState[data.chatId].isLoading = false;
+                messageHistoryState[data.chatId].hasMore =
+                  messagesByGroupId[data.chatId].length < data.total;
+            
+                // 2) Only prepend *the new batch* into the DOM
+                prependMessages(newMessages);
             } else {
-                console.log('Before initial load replace:', messagesByGroupId[data.chatId].length);
-                messagesByGroupId[data.chatId] = [...newMessages];
-                messagesByGroupId[data.chatId].reverse();
-                console.log('After initial load replace and reverse:', messagesByGroupId[data.chatId].length);
+                // Initial load: replace & scroll to bottom
+                messagesByGroupId[data.chatId] = [...newMessages].reverse();
+                messageHistoryState[data.chatId].isLoading = false;
+                messageHistoryState[data.chatId].hasMore = true;
+            
+                renderMessages(data.chatId);
             }
-    
-            messageHistoryState[data.chatId].isLoading = false;
-            messageHistoryState[data.chatId].hasMore = messagesByGroupId[data.chatId].length < data.total;
-    
-            renderMessages(data.chatId, isHistoryLoad);
         }
     });
 
