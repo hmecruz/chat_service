@@ -258,16 +258,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
     
             if (isHistoryLoad) {
-                console.log('Before prepending:', messagesByGroupId[data.chatId].length);
-                messagesByGroupId[data.chatId] = [
-                    ...newMessages.reverse(), // 🔁 Reverse here so oldest appears first
-                    ...messagesByGroupId[data.chatId]
-                ];
-                console.log('After prepending:', messagesByGroupId[data.chatId].length);
-    
-                // ✅ Only update hasMore when fetching history
-                messageHistoryState[data.chatId].hasMore =
-                    messagesByGroupId[data.chatId].length < data.total;
+                if (isHistoryLoad) {
+                    console.log('Before prepending:', messagesByGroupId[data.chatId].length);
+                    messagesByGroupId[data.chatId] = [
+                        ...newMessages.reverse(),
+                        ...messagesByGroupId[data.chatId]
+                    ];
+                    console.log('After prepending:', messagesByGroupId[data.chatId].length);
+                
+                    // ✅ Only set to true if the server sent some messages
+                    messageHistoryState[data.chatId].hasMore = data.messages.length > 0;
+                }
             } else {
                 console.log('Before initial load replace:', messagesByGroupId[data.chatId].length);
                 messagesByGroupId[data.chatId] = [...newMessages];
