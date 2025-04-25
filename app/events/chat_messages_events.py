@@ -73,7 +73,7 @@ class ChatMessagesEvents:
             # Log the successful message send
             events_logger.info(f"Message sent in chatId={chat_id} by sender={sender_id} with messageId={new_message['_id']}")
 
-            self._emit_to_chat_users('receiveMessage', response, chat_id, exclude_user_id=sender_id)
+            self._emit_to_chat_users('receiveMessage', response, chat_id, exclude_user_id=None)
 
         except Exception as e:
             # Log error during message send
@@ -177,9 +177,8 @@ class ChatMessagesEvents:
             # Log the request for message history
             events_logger.info(f"Requesting message history for chatId={chat_id}, page={page}, limit={limit}")
 
-            messages_list = self.chat_messages_service.get_messages(chat_id, page, limit)
-            total = len(messages_list)
-
+            messages_list, total = self.chat_messages_service.get_messages(chat_id, page, limit)
+        
             formatted_messages = [{
                 "messageId": str(msg["_id"]),
                 "senderId": msg["sender_id"],
@@ -196,12 +195,12 @@ class ChatMessagesEvents:
             }
 
             if has_request_context() and hasattr(request, 'sid'):
-                emit('messageHistoryResponse', response, room=request.sid)
+                emit('receiveMessage', response, room=request.sid)
             else:
-                emit('messageHistoryResponse', response)
+                emit('receiveMessage', response)
 
             # Log the successful message history retrieval
-            events_logger.info(f"Message history for chatId={chat_id} retrieved successfully")
+            events_logger.info(f"Message history for chatId={chat_id} retrieved successfully: {response}")
 
         except Exception as e:
             # Log error during message history request

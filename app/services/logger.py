@@ -11,7 +11,7 @@ services_logger.setLevel(logging.DEBUG)  # Adjust level as needed (DEBUG, INFO, 
 services_logger.propagate = True
 services_logger.handlers.clear()
 
-file_handler = logging.FileHandler(log_file_path, mode='a')  # Use append mode
+file_handler = logging.FileHandler(log_file_path, mode='w')  # Use append mode
 file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
     'Module %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s - %(asctime)s'

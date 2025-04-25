@@ -1,3 +1,7 @@
+import socket from './socket.js';
+import { sendMessage, fetchMessageHistory } from './api/chatMessagesAPI.js'; // Import fetchMessageHistory
+
+
 document.addEventListener('DOMContentLoaded', () => {
     const chatHeader = document.getElementById('chat-header');
     const chatMessages = document.getElementById('chat-messages');
@@ -10,6 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeControlsIndex = null;
     let currentActiveGroup = null;
     let editGroupModal, editGroupNameInput, editUsersInput, editCancelBtn, editConfirmBtn, editGroupFormElement;
+
+    const messagesPerPage = 20;
+    let currentChatGroupId; // Declare currentChatGroupId first
+    const messageHistoryState = {
+        'undefined': { // Initialize with a default key, or null if preferred
+            page: 1,
+            isLoading: false,
+            hasMore: true,
+        }
+    };
 
     const createEditGroupModal = () => {
         editGroupModal = document.createElement('div');
@@ -97,22 +111,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     createEditGroupModal();
 
-    // Preload fake messages for testing
-    function preloadMessages(groupId) {
-        if (!messagesByGroupId[groupId]) {
-            messagesByGroupId[groupId] = [
-                { sender: "Alice", text: "Hey there! 👋", timestamp: "10:01 AM" },
-                { sender: "Bob", text: "Hi! Ready for the meeting?", timestamp: "10:02 AM" }
-            ];
-        }
-    }
-
     window.showChatUI = function (group) {
         chatHeader.classList.remove('hidden');
         chatMessages.classList.remove('hidden');
         chatInputContainer.classList.remove('hidden');
 
         currentActiveGroup = group; // Store the active group
+        currentChatGroupId = group.chatId || group.id; // Set the local variable
+
+        // Update messageHistoryState with the actual groupId
+        messageHistoryState[currentChatGroupId] = messageHistoryState['undefined'];
+        delete messageHistoryState['undefined'];
+        messageHistoryState[currentChatGroupId].page = 1;
+        messageHistoryState[currentChatGroupId].isLoading = false;
+        messageHistoryState[currentChatGroupId].hasMore = true;
 
         chatHeader.innerHTML = `
             ${group.name}
@@ -133,22 +145,31 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        preloadMessages(group.id);
-        window.groupsData = window.groupsData || {}; // Ensure window.groupsData exists
-        window.groupsData.currentGroupId = group.id;
-        renderMessages(group.id);
+        console.log('chat.js currentChatGroupId set to:', currentChatGroupId);
+        messagesByGroupId[currentChatGroupId] = []; // Initialize message array for the new group
+        messageHistoryState[currentChatGroupId] = { page: 1, isLoading: false, hasMore: true }; // Initialize history state
+        renderMessages(currentChatGroupId); // Initial empty render
+        loadInitialMessages(currentChatGroupId);
     };
 
-    function renderMessages(groupId) {
-        const messages = messagesByGroupId[groupId] || [];
-        chatMessages.innerHTML = ''; // Reset chat messages
+    function loadInitialMessages(groupId) {
+        if (!messageHistoryState[groupId].isLoading && messageHistoryState[groupId].hasMore) {
+            messageHistoryState[groupId].isLoading = true;
+            fetchMessageHistory(socket, groupId, messageHistoryState[groupId].page, messagesPerPage);
+            console.log('Loading initial messages for group:', groupId);
+        }
+    }
 
+    function renderMessages(groupId, prepend = false) {
+        const messages = messagesByGroupId[groupId] || [];
+        const fragment = document.createDocumentFragment();
+    
         messages.forEach((msg, index) => {
             const isCurrentUser = msg.sender === currentUser;
-
+    
             const wrapper = document.createElement('div');
             wrapper.className = "relative flex flex-col mb-2";
-
+    
             const msgDiv = document.createElement('div');
             msgDiv.className = `
                 max-w-[75%] p-3 rounded-lg shadow
@@ -160,27 +181,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="text-base text-gray-900 break-words" data-msg-text>${msg.text}</div>
                 <div class="text-xs text-gray-400 mt-1">${msg.timestamp}</div>
             `;
-            // Only allow controls for current user's messages
             if (isCurrentUser) {
                 msgDiv.addEventListener('click', () => {
                     activeControlsIndex = activeControlsIndex === index ? null : index;
-                    renderMessages(groupId);  // Re-render to toggle control panel visibility
+                    renderMessages(groupId);
                 });
             }
-
-            // Append message bubble
             wrapper.appendChild(msgDiv);
-
-            // Create and append controls only if the message is clicked
             if (isCurrentUser && activeControlsIndex === index) {
                 const controls = createControlBox(isCurrentUser, index);
                 wrapper.appendChild(controls);
             }
-
-            chatMessages.appendChild(wrapper);
+            fragment.appendChild(wrapper);
         });
-
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+        if (!prepend) {
+            chatMessages.innerHTML = '';
+            chatMessages.appendChild(fragment);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else {
+            const currentScrollTop = chatMessages.scrollTop;
+            chatMessages.prepend(fragment);
+            chatMessages.scrollTop = currentScrollTop + fragment.scrollHeight; // Adjust scroll by the height of prepended content
+        }
     }
 
     function createControlBox(isCurrentUser, index) {
@@ -223,25 +246,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function addMessageToGroup(groupId, sender, text) {
-        if (!messagesByGroupId[groupId]) messagesByGroupId[groupId] = [];
-
-        messagesByGroupId[groupId].push({
-            sender,
-            text,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
-    }
-
     sendMessageBtn.addEventListener('click', () => {
-        const message = chatInput.value.trim();
-        const currentGroupId = window.groupsData?.currentGroupId;
+        console.log('Send button clicked!');
+        const currentGroupId = currentChatGroupId; // Use the local variable
+        const senderId = localStorage.getItem('userId');
 
-        if (message && currentGroupId !== null) {
-            addMessageToGroup(currentGroupId, currentUser, message);
+        console.log('Current Group ID (at start of send listener):', currentGroupId);
+        const message = chatInput.value.trim();
+
+        console.log('Message:', message);
+        console.log('Sender ID:', senderId);
+
+        if (message && currentGroupId && senderId) {
+            console.log('All conditions met. Calling sendMessage...');
+            sendMessage(socket, currentGroupId, senderId, message);
             chatInput.value = '';
             activeControlsIndex = null;
-            renderMessages(currentGroupId);
+        } else {
+            console.log('One or more conditions NOT met. Message not sent.');
+            if (!message) console.log('  - Message is empty.');
+            if (!currentGroupId) console.log('  - currentGroupId is null or undefined.');
+            if (!senderId) console.log('  - senderId is null or undefined.');
+        }
+    });
+
+    socket.on('receiveMessage', (data) => {
+        console.log('Received message data:', data);
+        if (data && data.chatId === currentChatGroupId) {
+            const isHistoryLoad = data.page > 1;
+            const newMessages = data.messages.map(msgData => ({
+                sender: msgData.senderId === localStorage.getItem('userId') ? currentUser : msgData.senderId,
+                text: msgData.content,
+                timestamp: new Date(msgData.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }));
+    
+            console.log(`Processing ${isHistoryLoad ? 'historical' : 'initial'} messages for page ${data.page}:`, newMessages);
+    
+            if (!messagesByGroupId[data.chatId]) {
+                messagesByGroupId[data.chatId] = [];
+            }
+    
+            if (isHistoryLoad) {
+                console.log('Before prepending:', messagesByGroupId[data.chatId].length);
+                messagesByGroupId[data.chatId] = [...newMessages, ...messagesByGroupId[data.chatId]];
+                console.log('After prepending:', messagesByGroupId[data.chatId].length);
+            } else {
+                console.log('Before initial load replace:', messagesByGroupId[data.chatId].length);
+                messagesByGroupId[data.chatId] = [...newMessages];
+                messagesByGroupId[data.chatId].reverse();
+                console.log('After initial load replace and reverse:', messagesByGroupId[data.chatId].length);
+            }
+    
+            messageHistoryState[data.chatId].isLoading = false;
+            messageHistoryState[data.chatId].hasMore = messagesByGroupId[data.chatId].length < data.total;
+    
+            renderMessages(data.chatId, isHistoryLoad);
+        }
+    });
+
+    chatMessages.addEventListener('scroll', () => {
+        console.log('Scroll event triggered');
+        console.log('chatMessages.scrollTop:', chatMessages.scrollTop);
+        console.log('currentChatGroupId:', currentChatGroupId);
+        console.log('messageHistoryState[currentChatGroupId]?.hasMore:', messageHistoryState[currentChatGroupId]?.hasMore);
+        console.log('messageHistoryState[currentChatGroupId]?.isLoading:', messageHistoryState[currentChatGroupId]?.isLoading);
+        if (chatMessages.scrollTop === 0 && currentChatGroupId && messageHistoryState[currentChatGroupId]?.hasMore && !messageHistoryState[currentChatGroupId]?.isLoading) {
+            messageHistoryState[currentChatGroupId].isLoading = true;
+            messageHistoryState[currentChatGroupId].page++;
+            fetchMessageHistory(socket, currentChatGroupId, messageHistoryState[currentChatGroupId].page, messagesPerPage);
+            console.log('Fetching more messages...');
         }
     });
 
@@ -251,3 +324,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+console.log('chat.js finished loading');

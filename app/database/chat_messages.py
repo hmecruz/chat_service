@@ -42,8 +42,9 @@ class ChatMessages:
         """Retrieve paginated messages for a chat group."""
         cursor = self.chat_messages.find({"chat_id": chat_id}).sort(sort_by, sort_order).skip(skip).limit(limit)
         messages = list(cursor)
-        database_logger.info(f"Fetched {len(messages)} messages for chat '{chat_id}' with skip={skip}, limit={limit}.")
-        return messages
+        total_messages = self.chat_messages.count_documents({"chat_id": chat_id})
+        database_logger.info(f"Fetched {len(messages)} messages for chat '{chat_id}' with skip={skip}, limit={limit}. Total messages: {total_messages}.")
+        return messages, total_messages
 
     def update_message(self, message_id: str, new_content: str) -> bool:
         """Update a message's content."""

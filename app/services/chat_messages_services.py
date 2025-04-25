@@ -76,9 +76,9 @@ class ChatMessagesService:
             if page < 1 or limit < 1:
                 raise ValueError("Page and limit must be greater than zero")
             skip = (page - 1) * limit
-            messages = self.chat_messages_dal.fetch_messages(chat_id, skip, limit)
-            services_logger.info(f"Fetched {len(messages)} messages for chat_id: {chat_id}")
-            return messages
+            messages, total_messages = self.chat_messages_dal.fetch_messages(chat_id, skip, limit)
+            services_logger.info(f"Fetched {len(messages)} messages for chat_id: {chat_id}. Total: {total_messages}")
+            return messages, total_messages
         except Exception as e:
             services_logger.error(f"Error in get_messages: {e}")
             raise

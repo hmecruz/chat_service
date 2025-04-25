@@ -64,7 +64,7 @@ export function deleteMessage(socket, chatId, messageId) {
 /**
  * Requests paginated message history for a chat group.
  * 
- * Server response (on `messageHistoryResponse`):
+ * Server response (on `receiveMessage`):
  * {
  *   chatId: string,         // Identifier of the chat group
  *   page: number,           // Page number

@@ -31,7 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             li.addEventListener('click', () => {
                 window.groupsData.currentGroupId = group.chatId || group.id;
+                console.log('groups.js: currentGroupId set to:', window.groupsData.currentGroupId, 'after group click');
                 window.showChatUI(group); // From chat.js
+                console.log('groups.js: showChatUI function called');
             });
 
             groupList.appendChild(li);
@@ -154,3 +156,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+console.log('groups.js finished loading');
