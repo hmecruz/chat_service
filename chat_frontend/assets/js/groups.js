@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.groupsData.currentGroupId = group.chatId || group.id;
                 console.log('groups.js: currentGroupId set to:', window.groupsData.currentGroupId, 'after group click');
                 window.showChatUI(group); // From chat.js
-                console.log('groups.js: showChatUI function called');
+                console.log('groups.js: showChatUI function called with group:', group);
             });
 
             groupList.appendChild(li);

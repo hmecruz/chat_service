@@ -1,6 +1,5 @@
 import socket from './socket.js';
-import { sendMessage, fetchMessageHistory } from './api/chatMessagesAPI.js'; // Import fetchMessageHistory
-
+import { sendMessage, fetchMessageHistory } from './api/chatMessagesAPI.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const chatHeader = document.getElementById('chat-header');
@@ -11,12 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const currentUser = "You";
     const messagesByGroupId = {};
+    const renderedMessageIdsByGroup = {};
+    
     let activeControlsIndex = null;
     let currentActiveGroup = null;
     let editGroupModal, editGroupNameInput, editUsersInput, editCancelBtn, editConfirmBtn, editGroupFormElement;
 
-    const messagesPerPage = 20;
-    let currentChatGroupId; // Declare currentChatGroupId first
+    let currentChatGroupId;
+    let currentChatGroupName;
+
+    const messagesPerPage = 10;
     const messageHistoryState = {
         'undefined': { // Initialize with a default key, or null if preferred
             page: 1,
@@ -25,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Create the edit group modal
     const createEditGroupModal = () => {
         editGroupModal = document.createElement('div');
         editGroupModal.id = 'edit-group-modal';
@@ -111,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     createEditGroupModal();
 
+    // Initialize the chat UI
     window.showChatUI = function (group) {
         chatHeader.classList.remove('hidden');
         chatMessages.classList.remove('hidden');
@@ -118,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentActiveGroup = group; // Store the active group
         currentChatGroupId = group.chatId || group.id; // Set the local variable
+        currentChatGroupName = group.groupName || group.name; // Set the local variable
 
         // Update messageHistoryState with the actual groupId
         messageHistoryState[currentChatGroupId] = messageHistoryState['undefined'];
@@ -127,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageHistoryState[currentChatGroupId].hasMore = true;
 
         chatHeader.innerHTML = `
-            ${group.name}
+            ${currentChatGroupName}
             <button id="edit-group-header-btn" class="text-gray-500 hover:text-blue-500 focus:outline-none ml-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536-7.072 7.072m1.414-1.414l7.071-7.071 7.07 7.071a4 4 0 01-5.656 5.656l-7.07-7.071 1.414-1.414z" />
@@ -138,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (editGroupHeaderBtn) {
             editGroupHeaderBtn.addEventListener('click', () => {
                 if (currentActiveGroup) {
-                    editGroupNameInput.value = currentActiveGroup.name;
+                    editGroupNameInput.value = currentChatGroupName;
                     editUsersInput.value = currentActiveGroup.users ? currentActiveGroup.users.join(', ') : '';
                     editGroupModal.classList.remove('hidden');
                 }
@@ -160,45 +166,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function prependMessages(newMsgs) {
-        const fragment = document.createDocumentFragment();
-      
-        newMsgs.forEach(msg => {
-          const wrapper = document.createElement('div');
-          wrapper.className = "relative flex flex-col mb-2";
-          const isCurrentUser = msg.sender === currentUser;
-      
-          const msgDiv = document.createElement('div');
-          msgDiv.className = `
-            max-w-[75%] p-3 rounded-lg shadow
-            ${isCurrentUser ? 'bg-green-100 self-end text-right' : 'bg-white self-start text-left'}
-            cursor-pointer
-          `;
-          msgDiv.innerHTML = `
-            <div class="text-sm font-semibold">${msg.sender}</div>
-            <div class="text-base break-words">${msg.text}</div>
-            <div class="text-xs text-gray-400 mt-1">${msg.timestamp}</div>
-          `;
-          wrapper.appendChild(msgDiv);
-      
-          // (Optionally add edit/delete controls here, if you still want them on prepended items)
-      
-          fragment.appendChild(wrapper);
-        });
-      
-        // Preserve scroll position:
-        const oldScrollHeight = chatMessages.scrollHeight;
-        chatMessages.prepend(fragment);
-        chatMessages.scrollTop = chatMessages.scrollHeight - oldScrollHeight;
-    }
-
     function renderMessages(groupId, prepend = false) {
+        if (!renderedMessageIdsByGroup[groupId]) {
+            renderedMessageIdsByGroup[groupId] = new Set();
+        }
+    
+        const renderedIds = renderedMessageIdsByGroup[groupId];
         const messages = messagesByGroupId[groupId] || [];
         const fragment = document.createDocumentFragment();
     
         messages.forEach((msg, index) => {
-            const isCurrentUser = msg.sender === currentUser;
+            if (renderedIds.has(msg.id)) return;
     
+            renderedIds.add(msg.id);
+    
+            const isCurrentUser = msg.sender === currentUser;
             const wrapper = document.createElement('div');
             wrapper.className = "relative flex flex-col mb-2";
     
@@ -219,24 +201,98 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderMessages(groupId);
                 });
             }
+    
             wrapper.appendChild(msgDiv);
             if (isCurrentUser && activeControlsIndex === index) {
                 const controls = createControlBox(isCurrentUser, index);
                 wrapper.appendChild(controls);
             }
+    
             fragment.appendChild(wrapper);
         });
     
-        if (!prepend) {
-            chatMessages.innerHTML = '';
-            chatMessages.appendChild(fragment);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        } else {
+        if (prepend) {
             const currentScrollTop = chatMessages.scrollTop;
             chatMessages.prepend(fragment);
-            chatMessages.scrollTop = currentScrollTop + fragment.scrollHeight; // Adjust scroll by the height of prepended content
+            chatMessages.scrollTop = currentScrollTop + fragment.scrollHeight;
+        } else {
+            chatMessages.appendChild(fragment);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     }
+
+    sendMessageBtn.addEventListener('click', () => {
+        console.log('Send button clicked!');
+        const currentGroupId = currentChatGroupId; // Use the local variable
+        const senderId = localStorage.getItem('userId');
+
+        const message = chatInput.value.trim();
+
+        if (message && currentGroupId && senderId) {
+            sendMessage(socket, currentGroupId, senderId, message);
+            chatInput.value = '';
+            activeControlsIndex = null;
+        } else {
+            console.log('Message not sent.');
+            if (!message) console.log('  - Message is empty.');
+            if (!currentGroupId) console.log('  - currentGroupId is null or undefined.');
+            if (!senderId) console.log('  - senderId is null or undefined.');
+        }
+    });
+
+    socket.on('receiveMessage', (data) => {
+        console.log('Received message data:', data);
+        if (data && data.chatId === currentChatGroupId) {
+            const isHistoryLoad = data.page > 1;
+            const newMessages = data.messages.map(msgData => ({
+                id: msgData.messageId,
+                sender: msgData.senderId === localStorage.getItem('userId') ? currentUser : msgData.senderId,
+                text: msgData.content,
+                timestamp: new Date(msgData.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }));
+            
+    
+            console.log(`Processing ${isHistoryLoad ? 'historical' : 'initial'} messages for page ${data.page}:`, newMessages);
+    
+            if (!messagesByGroupId[data.chatId]) {
+                messagesByGroupId[data.chatId] = [];
+            }
+    
+            if (isHistoryLoad) {
+                console.log('Before prepending:', messagesByGroupId[data.chatId].length);
+                messagesByGroupId[data.chatId] = [
+                    ...newMessages.reverse(), // 🔁 Reverse here so oldest appears first
+                    ...messagesByGroupId[data.chatId]
+                ];
+                console.log('After prepending:', messagesByGroupId[data.chatId].length);
+            } else {
+                console.log('Before initial load replace:', messagesByGroupId[data.chatId].length);
+                messagesByGroupId[data.chatId] = [...newMessages];
+                messagesByGroupId[data.chatId].reverse();
+                console.log('After initial load replace and reverse:', messagesByGroupId[data.chatId].length);
+            }
+    
+            messageHistoryState[data.chatId].isLoading = false;
+            messageHistoryState[data.chatId].hasMore = messagesByGroupId[data.chatId].length < data.total;
+    
+            renderMessages(data.chatId, isHistoryLoad);
+        }
+    });
+
+    chatMessages.addEventListener('scroll', () => {
+        console.log('Scroll event triggered');
+        console.log('chatMessages.scrollTop:', chatMessages.scrollTop);
+        console.log('currentChatGroupId:', currentChatGroupId);
+        console.log('messageHistoryState[currentChatGroupId]?.hasMore:', messageHistoryState[currentChatGroupId]?.hasMore);
+        console.log('messageHistoryState[currentChatGroupId]?.isLoading:', messageHistoryState[currentChatGroupId]?.isLoading);
+        if (chatMessages.scrollTop === 0 && currentChatGroupId && messageHistoryState[currentChatGroupId]?.hasMore && !messageHistoryState[currentChatGroupId]?.isLoading) {
+            messageHistoryState[currentChatGroupId].isLoading = true;
+            messageHistoryState[currentChatGroupId].page++;
+            fetchMessageHistory(socket, currentChatGroupId, messageHistoryState[currentChatGroupId].page, messagesPerPage);
+            console.log('Fetching more messages...');
+        }
+    });
+
 
     function createControlBox(isCurrentUser, index) {
         const controls = document.createElement('div');
@@ -277,79 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderMessages(currentGroupId);
         }
     }
-
-    sendMessageBtn.addEventListener('click', () => {
-        console.log('Send button clicked!');
-        const currentGroupId = currentChatGroupId; // Use the local variable
-        const senderId = localStorage.getItem('userId');
-
-        console.log('Current Group ID (at start of send listener):', currentGroupId);
-        const message = chatInput.value.trim();
-
-        console.log('Message:', message);
-        console.log('Sender ID:', senderId);
-
-        if (message && currentGroupId && senderId) {
-            console.log('All conditions met. Calling sendMessage...');
-            sendMessage(socket, currentGroupId, senderId, message);
-            chatInput.value = '';
-            activeControlsIndex = null;
-        } else {
-            console.log('One or more conditions NOT met. Message not sent.');
-            if (!message) console.log('  - Message is empty.');
-            if (!currentGroupId) console.log('  - currentGroupId is null or undefined.');
-            if (!senderId) console.log('  - senderId is null or undefined.');
-        }
-    });
-
-    socket.on('receiveMessage', (data) => {
-        console.log('Received message data:', data);
-        if (data && data.chatId === currentChatGroupId) {
-            const isHistoryLoad = data.page > 1;
-            const newMessages = data.messages.map(msgData => ({
-                sender: msgData.senderId === localStorage.getItem('userId') ? currentUser : msgData.senderId,
-                text: msgData.content,
-                timestamp: new Date(msgData.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }));
-    
-            console.log(`Processing ${isHistoryLoad ? 'historical' : 'initial'} messages for page ${data.page}:`, newMessages);
-    
-            if (isHistoryLoad) {
-                // 1) Update local state
-                messagesByGroupId[data.chatId] = [
-                  ...newMessages,
-                  ...messagesByGroupId[data.chatId]
-                ];
-                messageHistoryState[data.chatId].isLoading = false;
-                messageHistoryState[data.chatId].hasMore =
-                  messagesByGroupId[data.chatId].length < data.total;
-            
-                // 2) Only prepend *the new batch* into the DOM
-                prependMessages(newMessages);
-            } else {
-                // Initial load: replace & scroll to bottom
-                messagesByGroupId[data.chatId] = [...newMessages].reverse();
-                messageHistoryState[data.chatId].isLoading = false;
-                messageHistoryState[data.chatId].hasMore = true;
-            
-                renderMessages(data.chatId);
-            }
-        }
-    });
-
-    chatMessages.addEventListener('scroll', () => {
-        console.log('Scroll event triggered');
-        console.log('chatMessages.scrollTop:', chatMessages.scrollTop);
-        console.log('currentChatGroupId:', currentChatGroupId);
-        console.log('messageHistoryState[currentChatGroupId]?.hasMore:', messageHistoryState[currentChatGroupId]?.hasMore);
-        console.log('messageHistoryState[currentChatGroupId]?.isLoading:', messageHistoryState[currentChatGroupId]?.isLoading);
-        if (chatMessages.scrollTop === 0 && currentChatGroupId && messageHistoryState[currentChatGroupId]?.hasMore && !messageHistoryState[currentChatGroupId]?.isLoading) {
-            messageHistoryState[currentChatGroupId].isLoading = true;
-            messageHistoryState[currentChatGroupId].page++;
-            fetchMessageHistory(socket, currentChatGroupId, messageHistoryState[currentChatGroupId].page, messagesPerPage);
-            console.log('Fetching more messages...');
-        }
-    });
 
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
