@@ -1,4 +1,5 @@
 import socket from './socket.js';
+import { updateChatName, addUsersToChat} from './api/chatGroupsAPI.js';
 import { sendMessage, fetchMessageHistory, editMessage, deleteMessage} from './api/chatMessagesAPI.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -28,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Create the edit group modal
     const createEditGroupModal = () => {
         editGroupModal = document.createElement('div');
         editGroupModal.id = 'edit-group-modal';
@@ -54,38 +54,53 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         document.body.appendChild(editGroupModal);
-
+    
         editGroupFormElement = document.getElementById('edit-group-form');
         editGroupNameInput = document.getElementById('edit-group-name');
         editUsersInput = document.getElementById('edit-users');
         editCancelBtn = document.getElementById('edit-cancel-btn');
         editConfirmBtn = document.getElementById('edit-confirm-btn');
-
+    
         editCancelBtn.addEventListener('click', () => {
             editGroupModal.classList.add('hidden');
         });
-
+    
         editConfirmBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (currentActiveGroup && window.groupsData && window.groupsData.groups) { // Ensure window.groupsData and its groups property exist
+            if (currentActiveGroup && window.groupsData && window.groupsData.groups) {
                 const newGroupName = editGroupNameInput.value.trim();
-                const newUsers = editUsersInput.value.trim().split(',').map(user => user.trim());
-
+                const newUsers = editUsersInput.value.trim().split(',').map(user => user.trim()).filter(Boolean);
+    
                 if (newGroupName) {
                     const groupIndex = window.groupsData.groups.findIndex(g => g.id === currentActiveGroup.id);
                     if (groupIndex !== -1) {
-                        window.groupsData.groups[groupIndex].name = newGroupName;
-                        window.groupsData.groups[groupIndex].users = newUsers;
+                        const group = window.groupsData.groups[groupIndex];
+                        const oldUsers = group.users || [];
+    
+                        const usersToAdd = newUsers.filter(u => !oldUsers.includes(u));
+                        const usersToRemove = oldUsers.filter(u => !newUsers.includes(u));
+    
+                        // Update local state
+                        group.name = newGroupName;
+                        group.users = newUsers;
+    
+                        // Emit socket updates
+                        updateChatName(socket, currentChatGroupId, newGroupName);
+                        if (usersToAdd.length > 0) addUsersToChat(socket, currentChatGroupId, usersToAdd);
+                        if (usersToRemove.length > 0) removeUsersFromChat(socket, currentChatGroupId, usersToRemove);
+    
                         window.renderGroups(window.groupsData.groups);
                         editGroupModal.classList.add('hidden');
+    
                         chatHeader.innerHTML = `
                             ${newGroupName}
                             <button id="edit-group-header-btn" class="text-gray-500 hover:text-blue-500 focus:outline-none ml-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536-7.072 7.072m1.414-1.414l7.071-7.071 7.07 7.071a4 4 0 01-5.656 5.656l-7.07-7.071 1.414-1.414z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536-7.072 7.072m1.414-1.414l7.071-7.071 7.07 7.071a4 4 0 01-5.656 5.656l-7.07-7.071 1.414-1.414z" />
                                 </svg>
                             </button>
                         `;
+    
                         const newEditGroupHeaderBtn = document.getElementById('edit-group-header-btn');
                         if (newEditGroupHeaderBtn) {
                             newEditGroupHeaderBtn.addEventListener('click', () => {
@@ -107,13 +122,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("An error occurred while updating the group.");
             }
         });
-
+    
         editGroupFormElement.addEventListener('submit', (e) => {
             e.preventDefault();
         });
     };
-
+    
     createEditGroupModal();
+
+    socket.on('chatGroupNameUpdated', ({ chatId, newGroupName }) => {
+        const group = window.groupsData.groups.find(g => g.id === chatId);
+        if (group) {
+            group.name = newGroupName;
+        }
+    
+        if (window.groupsData.currentGroupId === chatId) {
+            chatHeader.innerHTML = `
+                ${newGroupName}
+                <button id="edit-group-header-btn" class="text-gray-500 hover:text-blue-500 focus:outline-none ml-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536-7.072 7.072m1.414-1.414l7.071-7.071 7.07 7.071a4 4 0 01-5.656 5.656l-7.07-7.071 1.414-1.414z" />
+                    </svg>
+                </button>
+            `;
+    
+            const newEditGroupHeaderBtn = document.getElementById('edit-group-header-btn');
+            if (newEditGroupHeaderBtn) {
+                newEditGroupHeaderBtn.addEventListener('click', () => {
+                    if (currentActiveGroup) {
+                        editGroupNameInput.value = currentActiveGroup.name;
+                        editUsersInput.value = currentActiveGroup.users ? currentActiveGroup.users.join(', ') : '';
+                        editGroupModal.classList.remove('hidden');
+                    }
+                });
+            }
+        }
+    
+        window.renderGroups(window.groupsData.groups);
+    });    
 
     function renderMessages(groupId, prepend = false) {
         if (!renderedMessageIdsByGroup[groupId]) {
