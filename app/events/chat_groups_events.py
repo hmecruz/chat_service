@@ -175,7 +175,7 @@ class ChatGroupsEvents:
             # Log successful user addition
             events_logger.info(f"Users added to chat group: {chat_id} - {added_users}")
 
-            self._emit_success('usersAddedToChatGroup', response, target_user_ids)
+            self._emit_success('usersAddedToChatGroup', response, added_users)
 
         except Exception as e:
             # Log error during user addition
@@ -211,7 +211,7 @@ class ChatGroupsEvents:
             # Log successful user removal
             events_logger.info(f"Users removed from chat group: {chat_id} - {removed_users}")
 
-            self._emit_success('usersRemovedFromChatGroup', response, target_user_ids)
+            self._emit_success('usersRemovedFromChatGroup', response, removed_users)
 
         except Exception as e:
             # Log error during user removal
