@@ -1,5 +1,5 @@
 import socket from './socket.js';
-import { sendMessage, fetchMessageHistory } from './api/chatMessagesAPI.js';
+import { sendMessage, fetchMessageHistory, editMessage} from './api/chatMessagesAPI.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const chatHeader = document.getElementById('chat-header');
@@ -122,11 +122,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
         const renderedIds = renderedMessageIdsByGroup[groupId];
         const messages = messagesByGroupId[groupId] || [];
+    
+        if (!prepend) {
+            chatMessages.innerHTML = ''; // 🔥 Clear previous content on fresh render
+            renderedMessageIdsByGroup[groupId] = new Set(); // Reset rendered message tracking
+        }
+    
         const fragment = document.createDocumentFragment();
     
         messages.forEach((msg, index) => {
-            if (renderedIds.has(msg.id)) return;
-    
+            if (renderedIds.has(msg.id) && !prepend) return;
             renderedIds.add(msg.id);
     
             const isCurrentUser = msg.sender === currentUser;
@@ -138,20 +143,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 max-w-[75%] p-3 rounded-lg shadow
                 ${isCurrentUser ? 'bg-green-100 self-end text-right' : 'bg-white self-start text-left'}
                 cursor-pointer
-            `;
+            `.trim();
+    
             msgDiv.innerHTML = `
                 <div class="text-sm font-semibold text-gray-700">${msg.sender}</div>
-                <div class="text-base text-gray-900 break-words" data-msg-text>${msg.text}</div>
+                <div class="text-base text-gray-900 break-words" data-msg-text>
+                    ${msg.text}
+                    ${msg.edited ? '<span class="text-xs text-gray-400 ml-1">(edited)</span>' : ''}
+                </div>
                 <div class="text-xs text-gray-400 mt-1">${msg.timestamp}</div>
             `;
+    
+            // 👇 Toggle control panel on click
             if (isCurrentUser) {
                 msgDiv.addEventListener('click', () => {
-                    activeControlsIndex = activeControlsIndex === index ? null : index;
+                    activeControlsIndex = (activeControlsIndex === index) ? null : index;
                     renderMessages(groupId);
                 });
             }
     
             wrapper.appendChild(msgDiv);
+    
             if (isCurrentUser && activeControlsIndex === index) {
                 const controls = createControlBox(isCurrentUser, index);
                 wrapper.appendChild(controls);
@@ -334,22 +346,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return controls;
     }
 
+    function handleEditMessage(index) {
+        const currentGroupId = window.groupsData?.currentGroupId;
+        const message = messagesByGroupId[currentGroupId][index];
+        const newText = prompt("Edit your message:", message.text);
+    
+        if (newText !== null && newText.trim() !== "" && newText !== message.text) {
+            // Emit to server
+            editMessage(socket, currentGroupId, message.id, newText.trim());
+    
+            // Optionally, optimistically update the UI
+            message.text = newText.trim();
+            renderMessages(currentGroupId);
+        }
+    }
+
+    socket.on('messageEdited', (data) => {
+        const { chatId, messageId, newContent, editedAt } = data;
+        const messages = messagesByGroupId[chatId];
+    
+        if (messages) {
+            const msg = messages.find(m => m.id === messageId);
+            if (msg) {
+                msg.text = newContent;
+                msg.timestamp = new Date(editedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                renderMessages(chatId);
+            }
+        }
+    });
+
     function handleDeleteMessage(index) {
         if (confirm("Are you sure you want to delete this message?")) {
             const currentGroupId = window.groupsData?.currentGroupId;
             messagesByGroupId[currentGroupId].splice(index, 1);
             activeControlsIndex = null;
-            renderMessages(currentGroupId);
-        }
-    }
-
-    function handleEditMessage(index) {
-        const currentGroupId = window.groupsData?.currentGroupId;
-        const message = messagesByGroupId[currentGroupId][index];
-        const newText = prompt("Edit your message:", message.text);
-
-        if (newText !== null && newText.trim() !== "") {
-            message.text = newText.trim();
             renderMessages(currentGroupId);
         }
     }
