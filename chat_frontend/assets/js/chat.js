@@ -1,5 +1,5 @@
 import socket from './socket.js';
-import { sendMessage, fetchMessageHistory, editMessage} from './api/chatMessagesAPI.js';
+import { sendMessage, fetchMessageHistory, editMessage, deleteMessage} from './api/chatMessagesAPI.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const chatHeader = document.getElementById('chat-header');
@@ -376,13 +376,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleDeleteMessage(index) {
+        const currentGroupId = window.groupsData?.currentGroupId;
+        const message = messagesByGroupId[currentGroupId][index];
+    
+        if (!message) return;
+    
         if (confirm("Are you sure you want to delete this message?")) {
-            const currentGroupId = window.groupsData?.currentGroupId;
-            messagesByGroupId[currentGroupId].splice(index, 1);
-            activeControlsIndex = null;
-            renderMessages(currentGroupId);
+            deleteMessage(socket, currentGroupId, message.id); // 👈 Call the server
         }
     }
+
+    socket.on('messageDeleted', ({ chatId, messageId }) => {
+        const messages = messagesByGroupId[chatId];
+        if (!messages) return;
+    
+        const index = messages.findIndex(m => m.id === messageId);
+        if (index !== -1) {
+            messages.splice(index, 1); // 🔥 remove it
+            renderedMessageIdsByGroup[chatId]?.delete(messageId); // 🧽 clean up tracking
+            if (window.groupsData?.currentGroupId === chatId) {
+                activeControlsIndex = null;
+                renderMessages(chatId); // ✅ re-render
+            }
+        }
+    });
 
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
