@@ -1,5 +1,5 @@
 import socket from './socket.js';
-import { updateChatName, addUsersToChat} from './api/chatGroupsAPI.js';
+import { updateChatName, addUsersToChat, removeUsersFromChat} from './api/chatGroupsAPI.js';
 import { sendMessage, fetchMessageHistory, editMessage, deleteMessage} from './api/chatMessagesAPI.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -34,23 +34,36 @@ document.addEventListener('DOMContentLoaded', () => {
         editGroupModal.id = 'edit-group-modal';
         editGroupModal.className = 'fixed inset-0 flex justify-center items-center bg-gray-900 bg-opacity-50 hidden';
         editGroupModal.innerHTML = `
-            <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-                <h2 class="text-xl font-semibold mb-4">Edit Group</h2>
-                <form id="edit-group-form">
-                    <div class="mb-4">
-                        <label for="edit-group-name" class="block text-gray-700">Group Name</label>
-                        <input type="text" id="edit-group-name" name="edit-group-name" class="w-full px-4 py-2 border rounded-lg" required />
+            <div class="bg-white p-8 rounded-xl shadow-md w-96">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">Edit Group</h2>
+
+                <form id="edit-group-form" class="space-y-6">
+                    <div>
+                        <label for="edit-group-name" class="block text-gray-700 text-sm font-bold mb-2">Group Name</label>
+                        <input type="text" id="edit-group-name" name="edit-group-name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required />
                     </div>
-                    <div class="mb-4">
-                        <label for="edit-users" class="block text-gray-700">Users (comma separated)</label>
-                        <input type="text" id="edit-users" name="edit-users" class="w-full px-4 py-2 border rounded-lg" required />
-                        <p class="text-sm text-gray-500 mt-1">Separate users with commas.</p>
+
+                    <div>
+                        <label for="edit-users" class="block text-gray-700 text-sm font-bold mb-2">Add Users (comma separated)</label>
+                        <input type="text" id="edit-users" name="edit-users" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                        <p class="text-gray-500 text-xs italic">Separate usernames with commas.</p>
                     </div>
-                    <div class="flex justify-between">
-                        <button type="button" id="edit-cancel-btn" class="bg-gray-300 text-white px-4 py-2 rounded-lg">Cancel</button>
-                        <button type="submit" id="edit-confirm-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Update</button>
+
+                    <div>
+                        <label for="remove-users" class="block text-gray-700 text-sm font-bold mb-2">Remove Users (comma separated)</label>
+                        <input type="text" id="remove-users" name="remove-users" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                        <p class="text-gray-500 text-xs italic">Separate usernames with commas.</p>
+                    </div>
+
+                    <div class="flex items-center justify-between mt-6">
+                        <button type="button" id="edit-cancel-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</button>
+                        <button type="submit" id="edit-confirm-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Update</button>
                     </div>
                 </form>
+
+                <div class="mt-8 pt-4 border-t border-gray-200 text-center">
+                    <button id="delete-chat-btn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Delete Chat</button>
+                </div>
             </div>
         `;
         document.body.appendChild(editGroupModal);
@@ -67,31 +80,29 @@ document.addEventListener('DOMContentLoaded', () => {
     
         editConfirmBtn.addEventListener('click', (e) => {
             e.preventDefault();
+        
             if (currentActiveGroup && window.groupsData && window.groupsData.groups) {
                 const newGroupName = editGroupNameInput.value.trim();
-                const newUsers = editUsersInput.value.trim().split(',').map(user => user.trim()).filter(Boolean);
-    
+                const usersToAdd = editUsersInput.value.trim().split(',').map(user => user.trim()).filter(Boolean);
+                const usersToRemove = document.getElementById('remove-users').value.trim().split(',').map(user => user.trim()).filter(Boolean);
+        
                 if (newGroupName) {
                     const groupIndex = window.groupsData.groups.findIndex(g => g.id === currentActiveGroup.id);
                     if (groupIndex !== -1) {
                         const group = window.groupsData.groups[groupIndex];
-                        const oldUsers = group.users || [];
-    
-                        const usersToAdd = newUsers.filter(u => !oldUsers.includes(u));
-                        const usersToRemove = oldUsers.filter(u => !newUsers.includes(u));
-    
-                        // Update local state
+        
+                        // Only update name locally
                         group.name = newGroupName;
-                        group.users = newUsers;
-    
-                        // Emit socket updates
+        
+                        // Emit updates
                         updateChatName(socket, currentChatGroupId, newGroupName);
                         if (usersToAdd.length > 0) addUsersToChat(socket, currentChatGroupId, usersToAdd);
                         if (usersToRemove.length > 0) removeUsersFromChat(socket, currentChatGroupId, usersToRemove);
-    
+        
                         window.renderGroups(window.groupsData.groups);
                         editGroupModal.classList.add('hidden');
-    
+        
+                        // Update header with new name
                         chatHeader.innerHTML = `
                             ${newGroupName}
                             <button id="edit-group-header-btn" class="text-gray-500 hover:text-blue-500 focus:outline-none ml-2">
@@ -100,13 +111,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </svg>
                             </button>
                         `;
-    
+        
+                        // Restore button functionality
                         const newEditGroupHeaderBtn = document.getElementById('edit-group-header-btn');
                         if (newEditGroupHeaderBtn) {
                             newEditGroupHeaderBtn.addEventListener('click', () => {
                                 if (currentActiveGroup) {
                                     editGroupNameInput.value = currentActiveGroup.name;
-                                    editUsersInput.value = currentActiveGroup.users ? currentActiveGroup.users.join(', ') : '';
+                                    editUsersInput.value = '';
+                                    document.getElementById('remove-users').value = '';
                                     editGroupModal.classList.remove('hidden');
                                 }
                             });
