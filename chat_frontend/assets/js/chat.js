@@ -1,5 +1,5 @@
 import socket from './socket.js';
-import { updateChatName, addUsersToChat, removeUsersFromChat} from './api/chatGroupsAPI.js';
+import { updateChatName, addUsersToChat, removeUsersFromChat, deleteChat} from './api/chatGroupsAPI.js';
 import { sendMessage, fetchMessageHistory, editMessage, deleteMessage} from './api/chatMessagesAPI.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let activeControlsIndex = null;
     let currentActiveGroup = null;
-    let editGroupModal, editGroupNameInput, editUsersInput, editCancelBtn, editConfirmBtn, editGroupFormElement;
+    let editGroupModal, editGroupNameInput, editUsersInput, editCancelBtn, editConfirmBtn, editGroupFormElement, deleteChatBtn, removeUsersInput;
 
     let currentChatGroupId;
     let currentChatGroupName;
@@ -73,7 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
         editUsersInput = document.getElementById('edit-users');
         editCancelBtn = document.getElementById('edit-cancel-btn');
         editConfirmBtn = document.getElementById('edit-confirm-btn');
-    
+        deleteChatBtn = document.getElementById('delete-chat-btn');
+        removeUsersInput = document.getElementById('remove-users');
+
+
         editCancelBtn.addEventListener('click', () => {
             editGroupModal.classList.add('hidden');
         });
@@ -93,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
                         // Only update name locally
                         group.name = newGroupName;
+                        group.groupName = newGroupName;
         
                         // Emit updates
                         updateChatName(socket, currentChatGroupId, newGroupName);
@@ -139,9 +143,47 @@ document.addEventListener('DOMContentLoaded', () => {
         editGroupFormElement.addEventListener('submit', (e) => {
             e.preventDefault();
         });
+
+        deleteChatBtn.addEventListener('click', () => {
+            if (currentActiveGroup && currentChatGroupId) {
+                if (confirm("Are you sure you want to delete this chat group? This cannot be undone.")) {
+                    console.log("Deleting chat group:", currentChatGroupId);
+                    deleteChat(socket, currentChatGroupId);
+                }
+            } else {
+                alert("No active group selected to delete.");
+            }
+        });
     };
     
     createEditGroupModal();
+
+    // Listen for chat deletion success
+    socket.on('chatGroupDeleted', (data) => {
+        console.log('Group deleted:', data);
+
+        if (data.deleted && data.chatId) {
+            if (window.groupsData && window.groupsData.groups) {
+                window.groupsData.groups = window.groupsData.groups.filter(group => group.id !== data.chatId && group.chatId !== data.chatId);
+                window.renderGroups(window.groupsData.groups);
+            }
+
+            if (window.groupsData.currentGroupId === data.chatId) {
+                window.groupsData.currentGroupId = null;
+                window.clearChatUI && window.clearChatUI();
+            }
+
+            if (chatHeader) {
+                chatHeader.innerHTML = '';
+            }
+
+            editGroupModal.classList.add('hidden');
+        } else {
+            alert("Failed to delete the group. Please try again.");
+        }
+    });
+
+
 
     socket.on('chatGroupNameUpdated', ({ chatId, newGroupName }) => {
         const group = window.groupsData.groups.find(g => g.id === chatId);
