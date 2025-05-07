@@ -183,8 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
-
     socket.on('chatGroupNameUpdated', ({ chatId, newGroupName }) => {
         const group = window.groupsData.groups.find(g => g.id === chatId);
         if (group) {
