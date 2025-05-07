@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONTAINER_NAME="ejabberd_xmpp"
-IMAGE_NAME="ejabberd/ecs"
+IMAGE_NAME="ejabberd/ecs:25.03"
 DEFAULT_PORT=5222  # Default client-to-server (c2s) port
 
 ADMIN_USER="admin"
