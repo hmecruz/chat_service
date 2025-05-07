@@ -1,20 +1,15 @@
 # Dockerfile (for ejabberd)
+FROM ejabberd/ecs:25.03
 
-FROM ejabberd/ecs:latest
-
-# bring in your custom config
+# Copy custom config
 COPY ejabberd.yml /home/ejabberd/conf/ejabberd.yml
 
-# bring in the admin-registration script
+# Copy entrypoint script (ensure it's executable locally)
 COPY scripts/ejabberd-entrypoint.sh /usr/local/bin/ejabberd-entrypoint.sh
-RUN chmod +x /usr/local/bin/ejabberd-entrypoint.sh
 
-# inject env defaults (will be overridden by docker-compose .env)
-ENV ADMIN_USER=${ADMIN_USER}
-ENV ADMIN_PASSWORD=${ADMIN_PASSWORD}
-ENV HOSTNAME=${HOSTNAME}
-ENV ERLANG_NODE=${ERLANG_NODE}
-
+# Expose standard ejabberd ports
 EXPOSE 5222 5269 5280 5443
 
-ENTRYPOINT ["/usr/local/bin/ejabberd-entrypoint.sh"]
+# Entry point to register admin and start server
+ENTRYPOINT ["/sbin/tini", "--", "/home/ejabberd/bin/ejabberdctl", "foreground"]
+

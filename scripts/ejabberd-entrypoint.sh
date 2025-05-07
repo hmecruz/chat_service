@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 echo "⏳ Waiting for ejabberd to boot up..."
 sleep 5
 
-echo "🔐 Registering admin user: $ADMIN_USER@$HOSTNAME"
-ejabberdctl register "$ADMIN_USER" "$HOSTNAME" "$ADMIN_PASSWORD" || true
+echo "🔐 Registering admin user: $ADMIN_USERNAME@$VHOST"
+ejabberdctl register "$ADMIN_USERNAME" "$VHOST" "$ADMIN_PASSWORD"
 
 # Finally, start Ejabberd in foreground
 exec ejabberdctl foreground
