@@ -1,37 +1,25 @@
-version: "3.9"
-
 services:
-  app:
-    build:
-      context: .
-      dockerfile: app/Dockerfile
-    container_name: flask_app
-    env_file: .env
-    ports:
-      - "${PORT}:${PORT}"
-    depends_on:
-      - ejabberd
-    networks:
-      - chatnet
-    command: python -m app.main
-
   ejabberd:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ejabberd_server
-    env_file: .env
+      tags:
+        - ejabberd_xmpp:latest
+    container_name: ejabberd
+    environment:
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - VHOST=${VHOST}
+    volumes:
+      - ./ejabberd.yml:/home/ejabberd/conf/ejabberd.yml:ro
     ports:
-      - "5222:5222"
-      - "5443:5443"
+      - "${PORT_C2S}:5222"
+      - "${PORT_S2S}:5269"
+      - "${PORT_HTTP}:5280"
+      - "${PORT_HTTP_TLS}:5443"
     networks:
-      - chatnet
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5443/api"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      - ejabberd-net
 
 networks:
-  chatnet:
+  ejabberd-net:
     driver: bridge
