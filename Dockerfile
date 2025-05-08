@@ -4,7 +4,7 @@ FROM ejabberd/ecs:25.03
 USER root
 
 # Copy custom config
-COPY ejabberd.yml /home/ejabberd/conf/ejabberd.yml
+#COPY ejabberd.yml /home/ejabberd/conf/ejabberd.yml
 
 # Copy register-admin script
 COPY scripts/ejabberd-register-admin.sh /usr/local/bin/ejabberd-register-admin.sh
