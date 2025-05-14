@@ -124,7 +124,7 @@ class ChatGroupsXMPP:
         try:
             response = ChatGroupsXMPP._post(endpoint, payload)
             xmpp_logger.info(f"✅ Affiliation of {username}@{XMPPConfig.VHOST} in room {room}: {response}")
-            return response
+            return response.text.strip('"')
         except RequestException as e:
             xmpp_logger.error(f"❌ Failed to get affiliation of {username}@{XMPPConfig.VHOST} in room {room}: {e}")
             return None

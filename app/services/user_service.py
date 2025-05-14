@@ -33,7 +33,7 @@ class UserService:
             affiliated_groups = []
             for group_id in all_group_ids:
                 affiliation = ChatGroupsXMPP.get_user_affiliation_in_room(group_id, user_id)
-                if affiliation and affiliation is not None:
+                if affiliation and affiliation is not None and affiliation != "none":
                     affiliated_groups.append(group_id)
 
             total = len(affiliated_groups)

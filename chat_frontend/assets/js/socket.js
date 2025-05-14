@@ -1,31 +1,39 @@
-// Simulate a successful login/authentication and store the userId for testing
-const simulateAuth = () => {
-    // Simulating the login/authentication process
-    const userId = 'user1'; // Use a mock userId for testing purposes
-    
-    // Store the userId in localStorage
-    localStorage.setItem('userId', userId); // Store userId in localStorage
-    
+// chat frontend script (e.g., index.js or chat.js)
+
+// Get nickname from URL
+const urlParams = new URLSearchParams(window.location.search);
+let nickname = urlParams.get('nickname');
+
+if (!nickname) {
+    console.log('No nickname found in URL, defaulting to guest.');
+    nickname = 'user1'; // fallback
+}
+
+console.log("Got nickname:", nickname);
+localStorage.setItem('userId', nickname);
+
+// auth
+const Auth = () => {
+    const userId = nickname;
+    localStorage.setItem('userId', userId);
     console.log('Authentication simulated: ', { userId });
 };
 
-// Call simulateAuth once to simulate the login process
-simulateAuth();
+Auth();
 
-// Now, get the userId from localStorage to pass into the Socket.IO connection
+// Use it to connect via Socket.IO
 const userId = localStorage.getItem('userId');
 
-// If no userId is found, redirect to login page or handle accordingly
 if (!userId) {
-    window.location.href = '/login'; // Example: redirect to login page
+    window.location.href = '/login'; // This should never happen 
 }
 
 const socket = io({
     auth: {
-        userId: userId // Pass userId directly for authentication
+        userId: userId
     },
     extraHeaders: {
-        'userId': userId // Pass userId as a header if necessary
+        'userId': userId
     }
 });
 
