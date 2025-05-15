@@ -2,9 +2,7 @@ services:
   ejabberd:
     build:
       context: .
-      dockerfile: Dockerfile
-      tags:
-        - ejabberd_xmpp:latest
+      dockerfile: docker/ejabberd/Dockerfile
     container_name: ejabberd
     environment:
       - ADMIN_USERNAME=${ADMIN_USERNAME}
@@ -25,11 +23,31 @@ services:
     container_name: mongodb
     restart: always
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT}:27017"
     environment:
-      MONGO_INITDB_DATABASE: chat_service
+      - MONGO_INITDB_DATABASE=${MONGO_DB}
     volumes:
       - mongo-data:/data/db
+    networks:
+      - ejabberd-net
+
+  flaskapp:
+    build:
+      context: .
+      dockerfile: docker/flask_app/Dockerfile
+    container_name: flaskapp
+    env_file:
+      - .env
+    ports:
+      - "${FLASK_PORT}:${FLASK_PORT}"
+    environment:
+      - FLASK_HOST=${FLASK_HOST}
+      - FLASK_PORT=${FLASK_PORT}
+      - MONGO_URI=${MONGO_URI}
+      - MONGO_DB=${MONGO_DB}
+    depends_on:
+      - mongodb
+      - ejabberd
     networks:
       - ejabberd-net
 

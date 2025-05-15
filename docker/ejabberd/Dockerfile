@@ -1,4 +1,5 @@
 # Dockerfile for ejabberd with custom entrypoint
+
 FROM ejabberd/ecs:25.03
 
 USER root
