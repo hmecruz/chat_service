@@ -1,15 +1,17 @@
 FROM nginx:alpine
 
-# Remove default site
+# Install curl to fetch mime.types
+RUN apk add --no-cache curl && \
+    curl -o /etc/nginx/mime.types https://raw.githubusercontent.com/nginx/nginx/master/conf/mime.types
+
+# Clean default content
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy templates (HTML) files directly into root (so index.html is at root)
+# Copy frontend files
 COPY chat_frontend/templates/ /usr/share/nginx/html/
-
-# Copy assets folder into /usr/share/nginx/html/assets
 COPY chat_frontend/assets/ /usr/share/nginx/html/assets/
 
-# Copy custom nginx config
+# Use custom config
 COPY docker/frontend/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
