@@ -172,6 +172,8 @@ acl:
       - 127.0.0.0/8
       - ::1/128
       - "::FFFF:172.17.0.1/128"
+      - 0.0.0.0/0    # allow all IPv4
+      - ::/0        # allow all IPv6
   admin:
     user: ${ADMIN_USERNAME}@${VHOST}
 

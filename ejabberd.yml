@@ -17,8 +17,8 @@
 
 
 define_macro:
-  HOST: localhost
-  ADMIN: "admin@localhost"
+  HOST: ejabberd
+  ADMIN: "admin@ejabberd"
   PORT_C2S: 5222
   PORT_C2S_TLS: 5223
   PORT_S2S: 5269
@@ -172,8 +172,10 @@ acl:
       - 127.0.0.0/8
       - ::1/128
       - "::FFFF:172.17.0.1/128"
+      - 0.0.0.0/0    # allow all IPv4
+      - ::/0        # allow all IPv6
   admin:
-    user: admin@localhost
+    user: admin@ejabberd
 
 access_rules:
   local:
