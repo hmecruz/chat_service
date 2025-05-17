@@ -1,0 +1,12 @@
+# Bytecode, caches, logs
+__pycache__/
+*.pyc
+*.log
+
+# Tests and dev-only
+tests/
+.chat_frontend/
+*.md
+
+# Docker artifacts
+docker-compose.override.yml

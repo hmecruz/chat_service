@@ -16,6 +16,7 @@ from .events.register_chat_groups_events import register_chat_group_events
 from .events.register_chat_messages_events import register_chat_message_events
 from .events.register_user_events import register_user_events
 from .events.register_socketio_connection_events import register_socketio_connection_events
+from .events.register_static_routes_events import register_static_routes
 
 from .xmpp.user_management_xmpp import UserManagementXMPP
 
@@ -24,9 +25,10 @@ socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app():
 
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder=None)
+    
     # Load configuration from a config file or object
-    app.config.from_object('config.service_config')  # Adjust as required
+    app.config.from_object('config.service_config.ServiceConfig')  # Adjust as required
 
     # Initialize SocketIO with the app instance
     socketio.init_app(app)
@@ -47,7 +49,7 @@ def create_app():
     chat_messages_service = ChatMessagesService(chat_messages_dal)
 
     # Instantiate UserService
-    user_service = UserService()
+    user_service = UserService(chat_groups_dal)
 
     # Register event handlers
     app.config['chat_groups_service'] = chat_groups_service
@@ -59,6 +61,7 @@ def create_app():
         register_chat_message_events(socketio)
         register_user_events(socketio)
         register_socketio_connection_events(socketio)
+        register_static_routes(app)
 
     # Ensure DB connection is closed on shutdown
     @app.teardown_appcontext

@@ -1,5 +1,6 @@
 from ..xmpp.chat_groups_xmpp import ChatGroupsXMPP
 from ..utils.validators import validate_id
+from .logger import services_logger
 
 class UserService:
     def __init__(self, chat_groups_dal):
@@ -18,37 +19,54 @@ class UserService:
         Returns:
             dict: Contains total number of rooms and list of chat group metadata.
         """
-        if page < 1 or limit < 1:
-            raise ValueError("Page and limit must be greater than zero")
-        validate_id(user_id)
+        services_logger.info(f"Fetching affiliated chat list for user: {user_id}, page: {page}, limit: {limit}")
 
-        # Fetch all XMPP rooms this user is in
-        all_rooms_full_jid = self.chat_groups_xmpp.get_user_rooms(user_id)
-        all_room_ids = [room.split("@")[0] for room in all_rooms_full_jid if "@" in room]
-        total = len(all_room_ids)
+        try:
+            if page < 1 or limit < 1:
+                raise ValueError("Page and limit must be greater than zero")
 
-        # Paginate
-        start = (page - 1) * limit
-        end = start + limit
-        paginated_room_ids = all_room_ids[start:end]
+            validate_id(user_id)
 
-        # Fetch metadata from DB for each room
-        chat_groups = []
-        for room_id in paginated_room_ids:
-            chat_group = self.chat_groups_dal.get_chat_group(room_id)
-            if chat_group:
-                chat_groups.append({
-                    "chatId": str(chat_group["_id"]),
-                    "groupName": chat_group["groupName"],
-                })
-            else:
-                # Fallback if room metadata isn't found
-                chat_groups.append({"chatId": room_id, "groupName": None})
+            all_group_ids = self.chat_groups_dal.get_all_chat_group_ids()
+            services_logger.debug(f"Retrieved {len(all_group_ids)} total chat group IDs")
 
-        return {
-            "userId": user_id,
-            "page": page,
-            "limit": limit,
-            "total": total,
-            "chats": chat_groups
-        }
+            affiliated_groups = []
+            for group_id in all_group_ids:
+                affiliation = ChatGroupsXMPP.get_user_affiliation_in_room(group_id, user_id)
+                if affiliation and affiliation is not None and affiliation != "none":
+                    affiliated_groups.append(group_id)
+
+            total = len(affiliated_groups)
+            services_logger.debug(f"User {user_id} is affiliated with {total} chat groups")
+
+            start = (page - 1) * limit
+            end = start + limit
+            paginated_ids = affiliated_groups[start:end]
+
+            chat_groups = []
+            for group_id in paginated_ids:
+                chat_group = self.chat_groups_dal.get_chat_group(group_id)
+                if chat_group:
+                    chat_groups.append({
+                        "chatId": str(chat_group["_id"]),
+                        "groupName": chat_group["groupName"],
+                    })
+                    services_logger.debug(f"Included group {group_id}")
+                else:
+                    chat_groups.append({"chatId": group_id, "groupName": None})
+                    services_logger.warning(f"Metadata not found for group {group_id}")
+
+            result = {
+                "userId": user_id,
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "chats": chat_groups
+            }
+
+            services_logger.info(f"✅ Successfully fetched chat list for user {user_id}")
+            return result
+
+        except Exception as e:
+            services_logger.error(f"❌ Error in get_chat_list for user {user_id}: {e}")
+            raise

@@ -7,4 +7,5 @@ test.py
 test2.py
 test3.py
 database.txt
-prosody.cfg.lua
+chat-widget/node_modules/
+notes.txt

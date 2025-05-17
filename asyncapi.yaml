@@ -100,7 +100,7 @@ channels:
       message:
         $ref: '#/components/messages/SendMessageRequest'
     subscribe:
-      operationId: receiveMessages
+      operationId: receiveMessage
       message:
         $ref: '#/components/messages/SendMessageEvent'
 

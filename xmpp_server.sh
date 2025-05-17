@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONTAINER_NAME="ejabberd_xmpp"
-IMAGE_NAME="ejabberd/ecs"
+IMAGE_NAME="ejabberd/ecs:25.03"
 DEFAULT_PORT=5222  # Default client-to-server (c2s) port
 
 ADMIN_USER="admin"
@@ -17,7 +17,7 @@ start_container() {
     else
         docker run -d --rm --name $CONTAINER_NAME \
             -p $PORT:5222 -p 5269:5269 -p 5280:5280 -p 5443:5443 \
-            -v /home/henrique/Desktop/chat_service/ejabberd.yml:/home/ejabberd/conf/ejabberd.yml \
+            -v "$(pwd)/ejabberd.yml:/home/ejabberd/conf/ejabberd.yml" \
             $IMAGE_NAME
 
         echo "Container '$CONTAINER_NAME' started on port $PORT."

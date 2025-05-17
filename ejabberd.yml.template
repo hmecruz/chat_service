@@ -17,8 +17,8 @@
 
 
 define_macro:
-  HOST: ejabberd
-  ADMIN: "admin@ejabberd"
+  HOST: ${VHOST}
+  ADMIN: "${ADMIN_USERNAME}@${VHOST}"
   PORT_C2S: 5222
   PORT_C2S_TLS: 5223
   PORT_S2S: 5269
@@ -175,7 +175,7 @@ acl:
       - 0.0.0.0/0    # allow all IPv4
       - ::/0        # allow all IPv6
   admin:
-    user: admin@ejabberd
+    user: ${ADMIN_USERNAME}@${VHOST}
 
 access_rules:
   local:

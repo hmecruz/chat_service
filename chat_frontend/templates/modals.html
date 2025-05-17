@@ -1,0 +1,20 @@
+<!-- Modal for Creating New Group -->
+<div id="create-group-modal" class="fixed inset-0 flex justify-center items-center bg-gray-900 bg-opacity-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+        <h2 class="text-xl font-semibold mb-4">Create New Group</h2>
+        <form id="create-group-form">
+            <div class="mb-4">
+                <label for="group-name" class="block text-gray-700">Group Name</label>
+                <input type="text" id="group-name" name="group-name" class="w-full px-4 py-2 border rounded-lg" required />
+            </div>
+            <div class="mb-4">
+                <label for="users" class="block text-gray-700">Users (comma separated)</label>
+                <input type="text" id="users" name="users" class="w-full px-4 py-2 border rounded-lg" required />
+            </div>
+            <div class="flex justify-between">
+                <button type="button" id="cancel-btn" class="bg-gray-300 text-white px-4 py-2 rounded-lg">Cancel</button>
+                <button type="submit" id="confirm-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Confirm</button>
+            </div>
+        </form>
+    </div>
+</div>

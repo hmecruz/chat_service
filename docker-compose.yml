@@ -1,0 +1,73 @@
+services:
+  ejabberd:
+    build:
+      context: .
+      dockerfile: docker/ejabberd/Dockerfile
+    container_name: ejabberd
+    environment:
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - VHOST=${VHOST}
+    volumes:
+      - ./ejabberd.yml:/home/ejabberd/conf/ejabberd.yml:ro
+    ports:
+      - "${PORT_C2S}:5222"
+      - "${PORT_S2S}:5269"
+      - "${PORT_HTTP}:5280"
+      - "${PORT_HTTP_TLS}:5443"
+    networks:
+      - ejabberd-net
+
+  mongodb:
+    image: mongo:4.4
+    container_name: mongodb
+    restart: always
+    ports:
+      - "${MONGO_PORT}:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGO_DB}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - ejabberd-net
+
+  flaskapp:
+    build:
+      context: .
+      dockerfile: docker/flask_app/Dockerfile
+    container_name: flaskapp
+    env_file:
+      - .env
+    ports:
+      - "${FLASK_PORT}:5000"
+    environment:
+      - FLASK_HOST=${FLASK_HOST}
+      - FLASK_PORT=${FLASK_PORT}
+      - MONGO_URI=${MONGO_URI}
+      - MONGO_DB=${MONGO_DB}
+    depends_on:
+      - mongodb
+      - ejabberd
+    networks:
+      - ejabberd-net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: frontend
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT}:80"
+    depends_on:
+      - flaskapp
+    networks:
+      - ejabberd-net
+
+volumes:
+  mongo-data:
+
+networks:
+  ejabberd-net:
+    driver: bridge

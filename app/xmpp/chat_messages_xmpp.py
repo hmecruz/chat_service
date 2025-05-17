@@ -1,9 +1,10 @@
-import logging
 import requests
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import RequestException
 
 from config.xmpp_config import XMPPConfig
+
+from .logger import xmpp_logger
 
 
 class ChatMessagesXMPP:
@@ -20,9 +21,10 @@ class ChatMessagesXMPP:
                 verify=False
             )
             response.raise_for_status()
+            xmpp_logger.info(f"✅ HTTP POST to {endpoint} succeeded.")
             return response
         except RequestException as e:
-            logging.exception(f"❌ HTTP request failed (POST {endpoint}): {e}")
+            xmpp_logger.exception(f"❌ HTTP request failed (POST {endpoint}): {e}")
             raise
 
     @staticmethod
@@ -57,16 +59,16 @@ class ChatMessagesXMPP:
 
         try:
             response = ChatMessagesXMPP._post(endpoint, payload)
-
             result = response.json()
+
             if result == 0:
-                logging.info(f"📤 Sent message from {from_jid} to {to_jid}: {body}")
+                xmpp_logger.info(f"📤 Sent message from {from_jid} to {to_jid}: {body}")
                 return True
             else:
-                logging.error(
+                xmpp_logger.error(
                     f"❌ Failed to send message from {from_jid} to {to_jid}: {result}"
                 )
                 return False
         except RequestException:
-            logging.error(f"❌ Failed to send message from {from_jid} to {to_jid}")
+            xmpp_logger.error(f"❌ Failed to send message from {from_jid} to {to_jid}")
             return False
