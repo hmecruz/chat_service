@@ -9,3 +9,5 @@ test3.py
 database.txt
 chat-widget/node_modules/
 notes.txt
+
+k8s/secrets.yaml
