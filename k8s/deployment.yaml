@@ -1,0 +1,424 @@
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chat-app
+
+---
+# Secrets for ejabberd
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ejabberd-secrets
+  namespace: chat-app
+type: Opaque
+data:
+  admin-username: "REPLACE_WITH_BASE64_ADMIN_USERNAME"
+  admin-password: "REPLACE_WITH_BASE64_ADMIN_PASSWORD"
+
+---
+# ConfigMap for ejabberd (vhost + full ejabberd.yml)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ejabberd-config
+  namespace: chat-app
+data:
+  vhost: "your.vhost.example.com"
+  ejabberd.yml: |
+    ## your full ejabberd.yml content here
+    hosts:
+      - "${VHOST}"
+    listen:
+      -
+        port: 5222
+        module: ejabberd_c2s
+      -
+        port: 5269
+        module: ejabberd_s2s_in
+      -
+        port: 5280
+        module: ejabberd_http
+        request_handlers:
+          "/admin": ejabberd_web_admin
+          "/api": mod_http_api
+    ## …and any other settings
+
+---
+# ejabberd Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ejabberd-deployment
+  namespace: chat-app
+  labels:
+    app: ejabberd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ejabberd
+  template:
+    metadata:
+      labels:
+        app: ejabberd
+    spec:
+      containers:
+        - name: ejabberd
+          image: ejabberd/ecs:25.03
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ejabberd-secrets
+                  key: admin-username
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ejabberd-secrets
+                  key: admin-password
+            - name: VHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ejabberd-config
+                  key: vhost
+            - name: TINI_SUBREAPER
+              value: "1"
+          ports:
+            - name: c2s
+              containerPort: 5222
+            - name: s2s
+              containerPort: 5269
+            - name: http
+              containerPort: 5280
+            - name: http-tls
+              containerPort: 5443
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: ejabberd-config-volume
+              mountPath: /home/ejabberd/conf/ejabberd.yml
+              subPath: ejabberd.yml
+      volumes:
+        - name: ejabberd-config-volume
+          configMap:
+            name: ejabberd-config
+            items:
+              - key: ejabberd.yml
+                path: ejabberd.yml
+
+---
+# ejabberd Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ejabberd-service
+  namespace: chat-app
+spec:
+  selector:
+    app: ejabberd
+  ports:
+    - name: c2s
+      port: 5222
+      targetPort: 5222
+    - name: s2s
+      port: 5269
+      targetPort: 5269
+    - name: http
+      port: 5280
+      targetPort: 5280
+    - name: http-tls
+      port: 5443
+      targetPort: 5443
+  type: ClusterIP
+
+---
+# MongoDB ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-config
+  namespace: chat-app
+data:
+  mongo-db: "chatdb"
+
+---
+# MongoDB PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+  namespace: chat-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# MongoDB Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-deployment
+  namespace: chat-app
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:4.4
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--bind_ip_all"
+          env:
+            - name: MONGO_INITDB_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: mongo-config
+                  key: mongo-db
+          ports:
+            - name: mongo
+              containerPort: 27017
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+      volumes:
+        - name: mongo-storage
+          persistentVolumeClaim:
+            claimName: mongo-pvc
+
+---
+# MongoDB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: chat-app
+spec:
+  selector:
+    app: mongodb
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017
+  type: ClusterIP
+
+---
+# Flask App ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flaskapp-config
+  namespace: chat-app
+data:
+  flask-host: "0.0.0.0"
+  flask-port: "5000"
+  mongo-uri: "mongodb://mongodb-service:27017"
+  mongo-db: "chatdb"
+
+---
+# Flask App Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flaskapp-deployment
+  namespace: chat-app
+  labels:
+    app: flaskapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flaskapp
+  template:
+    metadata:
+      labels:
+        app: flaskapp
+    spec:
+      containers:
+        - name: flaskapp
+          image: yourrepo/flaskapp:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5000
+          env:
+            - name: FLASK_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: flask-host
+            - name: FLASK_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: flask-port
+            - name: MONGO_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: mongo-uri
+            - name: MONGO_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: mongo-db
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+# Flask App Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: flaskapp-service
+  namespace: chat-app
+spec:
+  selector:
+    app: flaskapp
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+
+---
+# Nginx Config for Frontend
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf-config
+  namespace: chat-app
+data:
+  nginx.conf: |
+    worker_processes 1;
+    events { worker_connections 1024; }
+
+    http {
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+      sendfile on;
+      gzip on;
+
+      server {
+        listen 80;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        location / {
+          try_files $uri $uri/ /index.html;
+        }
+        location ~* \.(?:css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+          try_files $uri =404;
+          access_log off;
+          add_header Cache-Control "public";
+        }
+        location /api/ {
+          proxy_pass http://flaskapp-service:5000;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+        }
+        location /socket.io/ {
+          proxy_pass http://flaskapp-service:5000/socket.io/;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+          proxy_set_header Host $host;
+        }
+      }
+    }
+
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: chat-app
+  labels:
+    app: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: nginx
+          image: yourrepo/frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          volumeMounts:
+            - name: nginx-config-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-config-volume
+          configMap:
+            name: nginx-conf-config
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: chat-app
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  type: LoadBalancer

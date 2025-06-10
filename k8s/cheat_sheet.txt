@@ -1,0 +1,8 @@
+# BUILD CONTAINER IMAGES
+docker buildx build --platform linux/amd64 --network=host -t registry.deti/103442/<name_of_image>:v1 -f <path_to_dockerfile>
+docker buildx build --platform linux/amd64 --network=host -t registry.deti/103442/flask:v1 -f docker/flask_app/Dockerfile .
+
+# PUSH CONTAINER IMAGES
+docker push registry.deti/103442/<name_of_image>
+docker push registry.deti/103442/flask:v1 
+
