@@ -566,13 +566,20 @@ metadata:
   name: flaskapp-config
   namespace: "103442"
 data:
-  flask-host:     "0.0.0.0"
-  flask-port:     "5000"
-  mongo-uri:      "mongodb://mongodb-service:27017/"
-  mongo-db:       "ChatService"
+  flask-host:       "0.0.0.0"
+  flask-port:       "5000"
+  mongo-uri:        "mongodb://mongodb-service:27017/"
+  mongo-db:         "ChatService"
   ejabberd-api-url: "https://ejabberd-service:5443/api"
   muc-service:      "conference.ejabberd"
-  jwt-secret-key: ""
+  
+  jwt-secret-key:    ""
+  api-key:           ""    # your code will fall back to its default
+  
+  admin-user:        "admin@ejabberd"
+  admin-username:    "admin"
+  admin-password:    "admin_password"
+  vhost:             "ejabberd"
 
 ---
 # Flask App Deployment
@@ -611,6 +618,7 @@ spec:
                 configMapKeyRef:
                   name: flaskapp-config
                   key: flask-port
+
             - name: MONGO_URI
               valueFrom:
                 configMapKeyRef:
@@ -621,6 +629,7 @@ spec:
                 configMapKeyRef:
                   name: flaskapp-config
                   key: mongo-db
+
             - name: EJABBERD_API_URL
               valueFrom:
                 configMapKeyRef:
@@ -631,17 +640,44 @@ spec:
                 configMapKeyRef:
                   name: flaskapp-config
                   key: muc-service
+
             - name: JWT_SECRET_KEY
               valueFrom:
-                configMapKeyRRef:
-                name: flaskapp-config
-                key: jwt-secret-key
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: jwt-secret-key
+            - name: API_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: api-key
+
+            - name: ADMIN_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: admin-user
+            - name: ADMIN_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: admin-username
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: admin-password
+            - name: VHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: flaskapp-config
+                  key: vhost
           resources:
             requests:
-              cpu: "100m"
+              cpu:    "100m"
               memory: "128Mi"
             limits:
-              cpu: "500m"
+              cpu:    "500m"
               memory: "512Mi"
           readinessProbe:
             httpGet:
