@@ -6,3 +6,20 @@ docker buildx build --platform linux/amd64 --network=host -t registry.deti/10344
 docker push registry.deti/103442/<name_of_image>
 docker push registry.deti/103442/flask:v1 
 
+
+
+docker buildx build --platform linux/amd64 --network=host -t registry.deti/player-xpress/chat_ejabberd:v1 -f docker/ejabberd/Dockerfile .
+docker push registry.deti/player-xpress/chat_ejabberd:v1
+
+# Build and push Flask app image
+docker buildx build --platform linux/amd64 --network=host -t registry.deti/player-xpress/chat_flask_app:v1 -f docker/flask_app/Dockerfile .
+docker push registry.deti/player-xpress/chat_flask_app:v1
+
+# Build and push frontend image
+docker buildx build --platform linux/amd64 --network=host -t registry.deti/player-xpress/chat_frontend:v1 -f docker/frontend/Dockerfile .
+docker push registry.deti/player-xpress/chat_frontend:v1
+
+# Pull MongoDB 4.4, tag it, and push to your registry
+docker pull mongo:4.4
+docker tag mongo:4.4 registry.deti/player-xpress/chat_mongo:v1
+docker push registry.deti/player-xpress/chat_mongo:v1

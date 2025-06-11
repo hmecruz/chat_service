@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: "103442"
+  name: "player-xpress"
 
 ---
 # ConfigMap for ejabberd (vhost + full ejabberd.yml)
@@ -10,7 +10,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ejabberd-config
-  namespace: "103442"
+  namespace: "player-xpress"
 data:
   vhost: "ejabberd"
   ejabberd.yml: |
@@ -352,31 +352,14 @@ data:
     ### mode: yaml
     ### End:
     ### vim: set filetype=yaml tabstop=8
-
-    hosts:
-      - "${VHOST}"
-    listen:
-      -
-        port: 5222
-        module: ejabberd_c2s
-      -
-        port: 5269
-        module: ejabberd_s2s_in
-      -
-        port: 5280
-        module: ejabberd_http
-        request_handlers:
-          "/admin": ejabberd_web_admin
-          "/api": mod_http_api
-    ## …and any other settings
-
+  
 ---
 # ejabberd Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ejabberd-deployment
-  namespace: "103442"
+  name: chat-ejabberd-deployment
+  namespace: "player-xpress"
   labels:
     app: ejabberd
 spec:
@@ -391,7 +374,7 @@ spec:
     spec:
       containers:
         - name: ejabberd
-          image: registry.deti/103442/ejabberd:v1
+          image: registry.deti/player-xpress/chat_ejabberd:v1
           imagePullPolicy: IfNotPresent
           env:
             - name: ADMIN_USER
@@ -427,10 +410,10 @@ spec:
               containerPort: 5443
           resources:
             requests:
-              cpu: "100m"
+              cpu:    "100m"
               memory: "128Mi"
             limits:
-              cpu: "500m"
+              cpu:    "500m"
               memory: "512Mi"
           volumeMounts:
             - name: ejabberd-config-volume
@@ -450,7 +433,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ejabberd-service
-  namespace: "103442"
+  namespace: "player-xpress"
 spec:
   selector:
     app: ejabberd
@@ -475,7 +458,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mongo-config
-  namespace: "103442"
+  namespace: "player-xpress"
 data:
   mongo-db: "ChatService"
 
@@ -485,7 +468,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mongo-pvc
-  namespace: "103442"
+  namespace: "player-xpress"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -498,8 +481,8 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mongodb-deployment
-  namespace: "103442"
+  name: chat-mongodb-deployment
+  namespace: "player-xpress"
   labels:
     app: mongodb
 spec:
@@ -514,7 +497,7 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: registry.deti/103442/mongo:v1
+          image: registry.deti/player-xpress/chat_mongo:v1
           imagePullPolicy: IfNotPresent
           args:
             - "--bind_ip_all"
@@ -548,7 +531,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mongodb-service
-  namespace: "103442"
+  namespace: "player-xpress"
 spec:
   selector:
     app: mongodb
@@ -564,7 +547,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: flaskapp-config
-  namespace: "103442"
+  namespace: "player-xpress"
 data:
   flask-host:       "0.0.0.0"
   flask-port:       "5000"
@@ -586,8 +569,8 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flaskapp-deployment
-  namespace: "103442"
+  name: chat-flaskapp-deployment
+  namespace: "player-xpress"
   labels:
     app: flaskapp
 spec:
@@ -602,7 +585,7 @@ spec:
     spec:
       containers:
         - name: flaskapp
-          image: registry.deti/103442/flask:v1
+          image: registry.deti/player-xpress/chat_flask_app:v1
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -692,7 +675,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: flaskapp-service
-  namespace: "103442"
+  namespace: "player-xpress"
 spec:
   selector:
     app: flaskapp
@@ -708,7 +691,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-conf-config
-  namespace: "103442"
+  namespace: "player-xpress"
 data:
   nginx.conf: |
     worker_processes 1;
@@ -755,8 +738,8 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-deployment
-  namespace: "103442"
+  name: chat-frontend-deployment
+  namespace: "player-xpress"
   labels:
     app: frontend
 spec:
@@ -771,7 +754,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: registry.deti/103442/frontend:v1
+          image: registry.deti/player-xpress/chat_frontend:v1
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -798,7 +781,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend-service
-  namespace: "103442"
+  namespace: "player-xpress"
 spec:
   selector:
     app: frontend

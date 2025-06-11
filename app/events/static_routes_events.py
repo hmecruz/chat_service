@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, send_from_directory
+from flask import Blueprint, jsonify, send_from_directory
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 FRONTEND_PATH = os.path.join(BASE_DIR, '..', '..', 'chat_frontend')
@@ -24,3 +24,7 @@ def debug_static_test():
 @static_routes_bp.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(FRONTEND_PATH, 'assets', 'images'), 'default_group.png')  # or a real favicon
+
+@static_routes_bp.route('/health')
+def health():
+    return jsonify(status='ok'), 200
