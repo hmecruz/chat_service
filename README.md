@@ -28,6 +28,7 @@ A real-time chat service leveraging Flask, Flask-SocketIO, MongoDB, and ejabberd
 - 📡 **XMPP group chat** powered by ejabberd  
 - 🌐 **Static frontend** delivered via Nginx  
 - 🐳 **Dockerized** for consistent environments  
+- ☸️ **Kubernetes-ready deployment** using `deployment.yaml`  
 
 
 ## Prerequisites
@@ -39,6 +40,12 @@ A real-time chat service leveraging Flask, Flask-SocketIO, MongoDB, and ejabberd
 
 
 ## Local Development Setup
+
+**Note for Local MongoDB Usage**  
+If you're not using a cloud-hosted MongoDB cluster (e.g., Atlas), you must run a MongoDB container locally. We recommend using the official MongoDB **4.4** image for compatibility:
+```bash
+docker run -d --name local-mongo -p 27017:27017 mongo:4.4
+```
 
 ### `.env` for Local Testing
 
