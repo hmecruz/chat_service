@@ -84,6 +84,11 @@ source venv/bin/activate  # On Linux/macOS
 pip install -r requirements.txt
 ```
 
+4. Run the Flask App:
+```bash
+python -m app.main
+```
+
 ### Accessing the Frontend
 
 With the Flask backend running, you can access the static frontend in your web browser at the following address (FLASK_PORT=5000):
